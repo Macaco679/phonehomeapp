@@ -9,7 +9,8 @@ import { geocodificar } from "@/lib/geo";
 import { resolverPreco } from "@/lib/precos";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/card";
+import { Icon } from "@/components/icons";
 import { MARCAS, TIPOS_REPARO, formatBRL, type Preco } from "@/lib/types";
 import { FAMILIAS_AGENDAMENTO } from "@/lib/catalogo-iphone";
 import { cn } from "@/lib/utils";
@@ -318,55 +319,58 @@ export default function AgendarPage() {
 
   if (!user || !cliente) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <h1 className="text-xl font-semibold text-slate-900">
-          Entre para agendar seu reparo
-        </h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Crie uma conta de cliente para agendar e acompanhar seus reparos.
-        </p>
-        <div className="mt-6 flex justify-center gap-3">
-          <Link href="/login">
-            <Button variant="outline">Entrar</Button>
-          </Link>
-          <Link href="/cadastro">
-            <Button>Criar conta</Button>
-          </Link>
+      <div className="mx-auto max-w-md px-4 py-10">
+        <div className="rounded-3xl bg-gradient-to-br from-blue-600 to-blue-700 p-6 text-white shadow-lg shadow-blue-600/20">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+            <Icon name="calendar" className="h-6 w-6" />
+          </span>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight">Entre para agendar seu reparo</h1>
+          <p className="mt-1 text-sm text-blue-100">
+            Crie uma conta de cliente para agendar e acompanhar seus reparos em tempo real.
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <Link href="/login">
+              <Button className="w-full px-3 bg-white text-blue-700 shadow-none hover:bg-blue-50" size="lg">
+                Entrar
+              </Button>
+            </Link>
+            <Link href="/cadastro">
+              <Button className="w-full whitespace-nowrap border border-white/40 bg-transparent px-3 text-white shadow-none hover:bg-white/10" size="lg">
+                Criar conta
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>Agendar reparo</CardTitle>
-          <p className="mt-1 text-sm text-slate-500">
-            Seu pedido entra na fila aberta — a primeira assistência parceira
-            disponível na sua região aceita e assume o serviço.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              <div>
-                <Label htmlFor="marca">Marca</Label>
-                <Select
-                  id="marca"
-                  value={marca}
-                  onChange={(e) => {
-                    setMarca(e.target.value);
-                    setModelo("");
-                  }}
-                >
-                  {MARCAS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+    <div className="mx-auto max-w-lg px-4 py-5">
+      <PageHeader
+        title="Agendar reparo"
+        subtitle="Seu pedido entra na fila aberta: a primeira assistência parceira disponível na sua região aceita."
+      />
+
+      <form onSubmit={handleSubmit} className="space-y-4 pb-28 md:pb-0">
+        <Secao numero={1} titulo="Seu aparelho">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="marca">Marca</Label>
+              <Select
+                id="marca"
+                value={marca}
+                onChange={(e) => {
+                  setMarca(e.target.value);
+                  setModelo("");
+                }}
+              >
+                {MARCAS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </Select>
             </div>
 
             {marca === "Apple" ? (
@@ -392,60 +396,105 @@ export default function AgendarPage() {
                 </datalist>
               </div>
             )}
+          </div>
+        </Secao>
 
-            <div>
-              <Label htmlFor="tipo">Tipo de reparo</Label>
-              <Select
-                id="tipo"
-                value={tipoAtual}
-                onChange={(e) => setTipoReparo(e.target.value)}
-              >
-                {tiposDisponiveis.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </Select>
-              {precoEstimado !== null ? (
-                <p className="mt-1.5 text-sm text-slate-500">
-                  Preço estimado:{" "}
-                  <span className="font-medium text-slate-900">{formatBRL(precoEstimado)}</span>{" "}
-                  (o valor final é informado pela assistência e você confirma no app)
-                </p>
-              ) : (
-                modelo && (
-                  <p className="mt-1.5 text-sm text-slate-500">
-                    Preço sob consulta — a assistência informa o valor depois de avaliar, e você confirma no app.
-                  </p>
-                )
-              )}
+        <Secao numero={2} titulo="Qual é o problema?">
+          <div className="grid grid-cols-2 gap-2">
+            {tiposDisponiveis.map((t) => {
+              const ativo = t === tipoAtual;
+              const valor = resolverPreco(precos, marca, modelo, t, apenasModelo);
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTipoReparo(t)}
+                  aria-pressed={ativo}
+                  className={cn(
+                    "rounded-xl border px-3 py-3 text-left transition active:scale-[0.98]",
+                    ativo
+                      ? "border-blue-600 bg-blue-50 ring-2 ring-blue-100"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  <span className={cn("block text-sm font-semibold", ativo ? "text-blue-700" : "text-slate-800")}>{t}</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    {modelo ? (valor !== null ? formatBRL(valor) : "Sob consulta") : "Escolha o modelo"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Secao>
+
+        <Secao numero={3} titulo="Onde você está?">
+          <Label htmlFor="endereco">Endereço para o atendimento</Label>
+          <Textarea
+            id="endereco"
+            required
+            rows={2}
+            placeholder="Rua, número, bairro, cidade"
+            value={endereco}
+            onChange={(e) => setEndereco(e.target.value)}
+          />
+        </Secao>
+
+        <Secao numero={4} titulo="Quando você prefere?" opcional>
+          <SeletorHorario dia={dia} hora={hora} onDia={setDia} onHora={setHora} />
+        </Secao>
+
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-inset ring-red-200">{error}</p>
+        )}
+
+        {/* Barra de confirmação fixa acima das abas (celular) */}
+        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-xl md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+          <div className="mx-auto flex max-w-lg items-center gap-4">
+            <div className="min-w-0 md:hidden">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Estimativa</p>
+              <p className="truncate text-lg font-bold leading-tight text-slate-900">
+                {precoEstimado !== null ? formatBRL(precoEstimado) : modelo ? "Sob consulta" : "—"}
+              </p>
             </div>
-
-            <div>
-              <Label htmlFor="endereco">Endereço para o atendimento</Label>
-              <Textarea
-                id="endereco"
-                required
-                rows={2}
-                placeholder="Rua, número, bairro, cidade"
-                value={endereco}
-                onChange={(e) => setEndereco(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label>Quando você prefere ser atendido? (opcional)</Label>
-              <SeletorHorario dia={dia} hora={hora} onDia={setDia} onHora={setHora} />
-            </div>
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-              {submitting ? "Enviando..." : "Buscar assistência disponível"}
+            <Button type="submit" size="lg" className="flex-1" disabled={submitting}>
+              {submitting ? "Enviando..." : "Buscar assistência"}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+
+        <p className="text-center text-xs text-slate-500">
+          {precoEstimado !== null
+            ? "O valor final é informado pela assistência e você confirma no app."
+            : modelo
+              ? "Sem preço na tabela: a assistência informa o valor depois de avaliar, e você confirma no app."
+              : ""}
+        </p>
+      </form>
     </div>
+  );
+}
+
+function Secao({
+  numero,
+  titulo,
+  opcional,
+  children,
+}: {
+  numero: number;
+  titulo: string;
+  opcional?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5">
+      <div className="mb-3.5 flex items-center gap-2.5">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+          {numero}
+        </span>
+        <h2 className="text-base font-semibold tracking-tight text-slate-900">{titulo}</h2>
+        {opcional && <span className="text-xs text-slate-400">opcional</span>}
+      </div>
+      {children}
+    </section>
   );
 }
