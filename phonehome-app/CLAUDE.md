@@ -3,9 +3,12 @@
 
 # Phone Home — instruções para trabalhar neste repo
 
-- Next.js 16 (App Router), TypeScript, Tailwind. Sem servidor customizado —
-  toda a lógica de dados roda no cliente via `@supabase/supabase-js`,
-  protegida por Row Level Security no Postgres (não por checagens no código).
+- Next.js 16 (App Router), TypeScript, Tailwind. Dados rodam no cliente via
+  `@supabase/supabase-js`, protegidos por RLS/triggers/RPCs no Postgres (não por
+  checagens no código). Única parte server-side: `src/app/api/pagamentos/*`
+  (Mercado Pago), que usa a service role — nunca a exponha ao cliente.
+- Comissão, caixa, baixa de estoque e `pago_em_app` são feitos pelo banco
+  (trigger em `marketplace_trabalhos`); não replique isso no front.
 - Banco: projeto Supabase `IphoneHome` (`ymzzrnctrcdnpijznjxq`), compartilhado
   com outras automações da Phone Home. Todas as tabelas deste app usam o
   prefixo `marketplace_` — nunca crie uma tabela sem esse prefixo aqui.
