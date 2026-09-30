@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
-import { formatBRL, type CaixaLancamento } from "@/lib/types";
+import { formatBRL, formatData, type CaixaLancamento, type Config, type Trabalho } from "@/lib/types";
 
 const TIPO_LABEL: Record<CaixaLancamento["tipo"], string> = {
   receita: "Receita",
@@ -22,9 +22,26 @@ export default function CaixaPage() {
   const [valor, setValor] = useState("");
   const [tipo, setTipo] = useState<"despesa" | "receita">("despesa");
   const [busy, setBusy] = useState(false);
+  const [devidas, setDevidas] = useState<Trabalho[]>([]);
+  const [aRepassar, setARepassar] = useState<Trabalho[]>([]);
+  const [config, setConfig] = useState<Config | null>(null);
 
   const load = useCallback(async () => {
     if (!assistenciaUsuario) return;
+    const [{ data: pend }, { data: cfg }] = await Promise.all([
+      supabase
+        .from("marketplace_trabalhos")
+        .select("*")
+        .eq("assistencia_id", assistenciaUsuario.assistencia_id)
+        .eq("status", "concluido")
+        .eq("acerto_status", "pendente")
+        .order("concluido_em", { ascending: true }),
+      supabase.from("marketplace_config").select("*").maybeSingle(),
+    ]);
+    const lista = (pend as Trabalho[]) ?? [];
+    setDevidas(lista.filter((t) => t.forma_pagamento === "presencial" || (t.forma_pagamento === "app" && !t.pago_em_app)));
+    setARepassar(lista.filter((t) => t.forma_pagamento === "app" && t.pago_em_app));
+    setConfig(cfg as Config | null);
     const { data } = await supabase
       .from("marketplace_caixa")
       .select("*")
@@ -70,6 +87,44 @@ export default function CaixaPage() {
   return (
     <div>
       <h1 className="mb-4 text-xl font-semibold text-slate-900">Caixa</h1>
+
+      {devidas.length > 0 && (
+        <Card className="mb-6 border-amber-200 bg-amber-50">
+          <CardContent>
+            <p className="font-medium text-amber-900">
+              Comissões a pagar à plataforma:{" "}
+              {formatBRL(devidas.reduce((s, t) => s + Number(t.comissao_valor ?? 0), 0))}
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              Serviços pagos presencialmente (ou ainda não pagos pelo app). {config?.instrucoes_comissao}
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-amber-900">
+              {devidas.map((t) => (
+                <li key={t.id} className="flex justify-between gap-2">
+                  <span>
+                    {t.marca} {t.modelo} — {t.tipo_reparo} · {formatData(t.concluido_em)}
+                  </span>
+                  <span className="font-medium">{formatBRL(t.comissao_valor)}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {aRepassar.length > 0 && (
+        <Card className="mb-6 border-blue-200 bg-blue-50">
+          <CardContent>
+            <p className="font-medium text-blue-900">
+              A receber da plataforma (pagamentos feitos pelo app):{" "}
+              {formatBRL(aRepassar.reduce((s, t) => s + Number(t.valor_final ?? 0) - Number(t.comissao_valor ?? 0), 0))}
+            </p>
+            <p className="mt-1 text-sm text-blue-800">
+              Valor já descontada a comissão. A Phone Home repassa e marca como quitado.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card>
