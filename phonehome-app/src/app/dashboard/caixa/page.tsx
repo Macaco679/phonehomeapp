@@ -86,7 +86,7 @@ export default function CaixaPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold text-slate-900">Caixa</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight text-slate-900">Caixa</h1>
 
       {devidas.length > 0 && (
         <Card className="mb-6 border-amber-200 bg-amber-50">
