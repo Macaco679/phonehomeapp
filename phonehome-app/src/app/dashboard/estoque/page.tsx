@@ -229,6 +229,20 @@ function CampoNumero({
 }
 
 // ---------- linha de peça ----------
+// "Tela" no banco aparece como "Display" (nome usado pela Phone Home).
+function nomePeca(peca: string) {
+  return peca === "Tela" ? "Display" : peca;
+}
+
+function Campo({ rotulo, children, className }: { rotulo: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={className}>
+      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">{rotulo}</p>
+      {children}
+    </div>
+  );
+}
+
 function LinhaPeca({
   item,
   onAtualizar,
@@ -238,86 +252,76 @@ function LinhaPeca({
 }) {
   const sit = situacao(item);
   const ui = SITUACAO_UI[sit];
+  const nome = nomePeca(item.peca);
   return (
-    <div
-      className={cn(
-        "grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 px-4 py-3 sm:grid-cols-[minmax(0,1.6fr)_7rem_7rem_auto_8.5rem]",
-        "border-t border-slate-100 first:border-t-0 transition-colors hover:bg-slate-50/60"
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-3">
+    <div className="flex flex-wrap items-end gap-x-5 gap-y-3 border-t border-slate-100 px-4 py-3.5 first:border-t-0 transition-colors hover:bg-slate-50/60">
+      <div className="flex min-w-[11rem] flex-1 items-center gap-3 self-center">
         <span
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
             sit === "falta" ? "bg-red-50 text-red-600" : sit === "baixo" ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"
           )}
         >
-          <Icone peca={item.peca} className="h-[18px] w-[18px]" />
+          <Icone peca={item.peca} className="h-5 w-5" />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-900">{item.peca}</p>
-          <p className="truncate text-xs text-slate-400 sm:hidden">
-            {item.preco_venda !== null ? formatBRL(item.preco_venda) : "Sem preço de venda"}
-          </p>
+          <p className="truncate text-sm font-semibold text-slate-900">{nome}</p>
+          <span className={cn("mt-0.5 inline-flex items-center gap-1.5 text-xs font-medium", sit === "falta" ? "text-red-600" : sit === "baixo" ? "text-amber-600" : "text-emerald-600")}>
+            <span className={cn("h-1.5 w-1.5 rounded-full", ui.dot)} />
+            {ui.label}
+          </span>
         </div>
       </div>
 
-      <div className="order-last col-span-2 grid grid-cols-2 gap-2 sm:order-none sm:col-span-2 sm:contents">
+      <Campo rotulo="Custo" className="w-28">
         <CampoNumero
-          ariaLabel={`Custo de ${item.peca}`}
+          ariaLabel={`Custo de ${nome}`}
           valor={item.preco_custo}
           prefixo="R$"
           casas={2}
-          placeholder="Custo"
+          placeholder="0,00"
           onSalvar={(v) => onAtualizar(item.id, { preco_custo: v })}
         />
+      </Campo>
+
+      <Campo rotulo="Venda" className="w-28">
         <CampoNumero
-          ariaLabel={`Preço de venda de ${item.peca}`}
+          ariaLabel={`Preço de venda de ${nome}`}
           valor={item.preco_venda}
           prefixo="R$"
           casas={2}
-          placeholder="Venda"
+          placeholder="0,00"
           onSalvar={(v) => onAtualizar(item.id, { preco_venda: v })}
         />
-      </div>
+      </Campo>
 
-      <div className="flex items-center justify-end gap-1.5">
-        <button
-          type="button"
-          aria-label={`Diminuir ${item.peca}`}
-          disabled={item.quantidade <= 0}
-          onClick={() => onAtualizar(item.id, { quantidade: item.quantidade - 1 })}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-lg leading-none text-slate-600 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          −
-        </button>
-        <CampoNumero
-          ariaLabel={`Quantidade de ${item.peca}`}
-          valor={item.quantidade}
-          onSalvar={(v) => onAtualizar(item.id, { quantidade: v ?? 0 })}
-          className="w-14 [&_input]:text-center [&_input]:font-semibold"
-        />
-        <button
-          type="button"
-          aria-label={`Aumentar ${item.peca}`}
-          onClick={() => onAtualizar(item.id, { quantidade: item.quantidade + 1 })}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-lg leading-none text-slate-600 transition hover:bg-slate-50 active:scale-95"
-        >
-          +
-        </button>
-      </div>
-
-      <div className="hidden justify-end sm:flex">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
-            ui.pill
-          )}
-        >
-          <span className={cn("h-1.5 w-1.5 rounded-full", ui.dot)} />
-          {ui.label}
-        </span>
-      </div>
+      <Campo rotulo="Quantidade">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            aria-label={`Diminuir ${nome}`}
+            disabled={item.quantidade <= 0}
+            onClick={() => onAtualizar(item.id, { quantidade: item.quantidade - 1 })}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-lg leading-none text-slate-600 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            −
+          </button>
+          <CampoNumero
+            ariaLabel={`Quantidade de ${nome}`}
+            valor={item.quantidade}
+            onSalvar={(v) => onAtualizar(item.id, { quantidade: v ?? 0 })}
+            className="w-14 [&_input]:text-center [&_input]:font-semibold"
+          />
+          <button
+            type="button"
+            aria-label={`Aumentar ${nome}`}
+            onClick={() => onAtualizar(item.id, { quantidade: item.quantidade + 1 })}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-lg leading-none text-slate-600 transition hover:bg-slate-50 active:scale-95"
+          >
+            +
+          </button>
+        </div>
+      </Campo>
     </div>
   );
 }
@@ -432,7 +436,7 @@ export default function EstoquePage() {
       if (serie !== "todas" && serieDoModelo(i.modelo_compativel) !== serie) return false;
       if (filtro !== "todos" && situacao(i) !== filtro) return false;
       if (termo) {
-        const texto = `${i.peca} ${i.modelo_compativel ?? ""}`.toLowerCase();
+        const texto = `${i.peca} ${nomePeca(i.peca)} ${i.modelo_compativel ?? ""}`.toLowerCase();
         if (!termo.split(/\s+/).every((t) => texto.includes(t))) return false;
       }
       return true;
@@ -692,13 +696,6 @@ export default function EstoquePage() {
 
               {aberto && (
                 <div className="border-t border-slate-200">
-                  <div className="hidden grid-cols-[minmax(0,1.6fr)_7rem_7rem_auto_8.5rem] gap-x-4 bg-slate-50 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:grid">
-                    <span>Peça</span>
-                    <span>Custo</span>
-                    <span>Venda</span>
-                    <span className="w-[8.75rem] text-center">Quantidade</span>
-                    <span className="text-right">Situação</span>
-                  </div>
                   {g.itens.map((item) => (
                     <LinhaPeca key={item.id} item={item} onAtualizar={atualizar} />
                   ))}
