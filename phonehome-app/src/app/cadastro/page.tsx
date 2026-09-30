@@ -47,59 +47,19 @@ function CadastroForm() {
       return;
     }
 
-    // Sem sessão ainda = confirmação de e-mail pendente. Não dá pra gravar o
-    // perfil agora (RLS exige um usuário autenticado) — guardamos os dados
-    // neste navegador e terminamos o cadastro em /completar-cadastro assim
-    // que a pessoa confirmar o e-mail e voltar autenticada.
-    if (!data.session) {
-      window.localStorage.setItem(
-        PENDING_KEY,
-        JSON.stringify({ tipo, nome, telefone, endereco, raio })
-      );
-      setLoading(false);
-      setDone(true);
+    // Os dados do formulário ficam guardados neste navegador e o perfil é criado
+    // em /completar-cadastro: já, se a conta tem sessão; ou assim que a pessoa
+    // confirmar o e-mail e voltar autenticada (o banco exige usuário logado).
+    window.localStorage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ tipo, nome, telefone, endereco, raio })
+    );
+    setLoading(false);
+    if (data.session) {
+      router.push("/completar-cadastro");
       return;
     }
-
-    if (tipo === "cliente") {
-      const { error: clienteError } = await supabase
-        .from("marketplace_clientes")
-        .insert({ auth_user_id: data.user.id, nome, email, telefone });
-      if (clienteError) {
-        setLoading(false);
-        setError(clienteError.message);
-        return;
-      }
-    } else {
-      const { data: assistencia, error: assistenciaError } = await supabase
-        .from("marketplace_assistencias")
-        .insert({ nome, endereco, raio_atendimento_km: Number(raio) || 10 })
-        .select()
-        .single();
-      if (assistenciaError || !assistencia) {
-        setLoading(false);
-        setError(assistenciaError?.message ?? "Não foi possível criar a assistência.");
-        return;
-      }
-      const { error: usuarioError } = await supabase
-        .from("marketplace_usuarios")
-        .insert({
-          auth_user_id: data.user.id,
-          assistencia_id: assistencia.id,
-          papel: "dono",
-          nome,
-          telefone,
-        });
-      if (usuarioError) {
-        setLoading(false);
-        setError(usuarioError.message);
-        return;
-      }
-    }
-
-    setLoading(false);
-    router.push(tipo === "assistencia" ? "/dashboard" : "/agendar");
-    router.refresh();
+    setDone(true);
   }
 
   if (done) {
