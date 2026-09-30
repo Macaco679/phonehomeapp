@@ -62,6 +62,27 @@ pagamento combinado por fora, a plataforma depende da assistência lançar o
 valor certo — não há hoje nenhuma verificação ou trava contra sub-declaração
 (ver "Próximos passos").
 
+## Cadastro e login
+
+Cadastro por e-mail/senha (`/cadastro`) só cria o usuário no Supabase Auth;
+a linha de perfil (`marketplace_clientes` ou `marketplace_assistencias` +
+`marketplace_usuarios`) só pode ser gravada com uma sessão autenticada (é o
+que a policy `with_check (auth_user_id = auth.uid())` exige). Como o projeto
+Supabase tem confirmação de e-mail ligada, `signUp` não retorna sessão na
+hora — por isso os dados do formulário ficam guardados neste navegador
+(`localStorage`, chave `phonehome_pending_signup`) e a página
+`/completar-cadastro` termina o cadastro sozinha assim que a pessoa confirma
+o e-mail e volta autenticada (é para onde `emailRedirectTo` aponta).
+
+Login com Google usa `supabase.auth.signInWithOAuth({ provider: "google" })`
+e também redireciona para `/completar-cadastro` — que pede tipo (cliente ou
+assistência) + os dados obrigatórios que o Google não fornece (telefone,
+endereço) para quem ainda não tem perfil, e simplesmente segue adiante para
+quem já tem. Para o botão do Google funcionar em produção, falta configurar
+o provider no painel do Supabase (Authentication → Providers → Google) com
+um Client ID/Secret do Google Cloud Console, autorizando
+`https://ymzzrnctrcdnpijznjxq.supabase.co/auth/v1/callback` como redirect URI.
+
 ## Próximos passos (antes de ir para clientes reais)
 
 - [ ] Pagamento dentro do app (Pix/cartão) — hoje o formulário de "Finalizar"
@@ -75,5 +96,5 @@ valor certo — não há hoje nenhuma verificação ou trava contra sub-declara�
       assistência vê todo trabalho em `fila`, independente da distância.
 - [ ] Convite de técnicos: hoje só o próprio usuário se vincula a uma
       assistência no cadastro; não há fluxo do dono convidar um técnico.
-- [ ] E-mail de confirmação do Supabase Auth está no padrão do projeto — vale
-      revisar o template e decidir se confirmação é obrigatória.
+- [ ] Ativar o provider Google no painel do Supabase (ver "Cadastro e
+      login" acima) — o botão já existe no app, falta só a configuração.
