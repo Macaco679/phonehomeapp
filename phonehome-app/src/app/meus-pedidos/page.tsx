@@ -75,7 +75,7 @@ function MeusPedidos() {
   if (!user || !cliente) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <h1 className="text-xl font-semibold text-slate-900">Entre para ver seus pedidos</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Entre para ver seus pedidos</h1>
         <Link href="/login" className="mt-4 inline-block">
           <Button>Entrar</Button>
         </Link>
@@ -86,7 +86,7 @@ function MeusPedidos() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Meus pedidos</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Meus pedidos</h1>
         <Link href="/loja">
           <Button size="sm" variant="outline">
             Ir para a loja
