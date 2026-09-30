@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GoogleButton } from "@/components/auth/google-button";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -63,6 +64,15 @@ export default function LoginPage() {
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
+          <div className="my-4 flex items-center gap-3 text-xs text-slate-400">
+            <div className="h-px flex-1 bg-slate-200" />
+            ou
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+          <GoogleButton
+            redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/completar-cadastro`}
+            onError={setError}
+          />
           <p className="mt-4 text-center text-sm text-slate-500">
             Ainda não tem conta?{" "}
             <Link href="/cadastro" className="font-medium text-blue-600">
