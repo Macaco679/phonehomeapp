@@ -80,7 +80,7 @@ export default function ConfiguracoesPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold text-slate-900">Minha assistência</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight text-slate-900">Minha assistência</h1>
       {!ehDono && (
         <p className="mb-4 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
           Só o dono da assistência pode alterar estes dados.
