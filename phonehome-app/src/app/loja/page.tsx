@@ -87,7 +87,7 @@ export default function LojaPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="text-xl font-semibold text-slate-900">Loja de peças e acessórios</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Loja de peças e acessórios</h1>
       <p className="mt-1 text-sm text-slate-500">
         Produtos das assistências parceiras. Pague com Pix ou cartão depois de montar o pedido.
       </p>
