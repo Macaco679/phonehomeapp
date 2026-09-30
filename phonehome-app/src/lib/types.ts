@@ -10,6 +10,8 @@ export interface Assistencia {
   id: string;
   nome: string;
   endereco: string | null;
+  latitude: number | null;
+  longitude: number | null;
   raio_atendimento_km: number;
   especialidades: string[];
   taxa_comissao_pct: number;
@@ -24,6 +26,16 @@ export interface UsuarioAssistencia {
   papel: "dono" | "tecnico";
   nome: string | null;
   telefone: string | null;
+  created_at?: string;
+}
+
+export interface Convite {
+  id: string;
+  assistencia_id: string;
+  email: string;
+  papel: "tecnico";
+  status: "pendente" | "aceito" | "cancelado";
+  created_at: string;
 }
 
 export interface Cliente {
@@ -33,6 +45,8 @@ export interface Cliente {
   email: string | null;
   telefone: string | null;
 }
+
+export type ConfirmacaoCliente = "pendente" | "confirmado" | "contestado";
 
 export interface Trabalho {
   id: string;
@@ -44,11 +58,19 @@ export interface Trabalho {
   tipo_reparo: string;
   preco_estimado: number | null;
   endereco: string;
+  latitude: number | null;
+  longitude: number | null;
   horario_preferido: string | null;
   status: StatusTrabalho;
   valor_final: number | null;
   forma_pagamento: "app" | "presencial" | null;
   pago_em_app: boolean;
+  comissao_pct: number | null;
+  comissao_valor: number | null;
+  acerto_status: "nao_aplicavel" | "pendente" | "quitado";
+  cliente_confirmacao: ConfirmacaoCliente;
+  cliente_motivo: string | null;
+  cliente_confirmacao_em: string | null;
   created_at: string;
   aceito_em: string | null;
   concluido_em: string | null;
@@ -66,6 +88,14 @@ export interface EstoqueItem {
   updated_at: string;
 }
 
+export interface TrabalhoPeca {
+  id: string;
+  trabalho_id: string;
+  estoque_id: string;
+  quantidade: number;
+  baixado: boolean;
+}
+
 export interface CaixaLancamento {
   id: string;
   assistencia_id: string;
@@ -76,12 +106,79 @@ export interface CaixaLancamento {
   created_at: string;
 }
 
+export interface Preco {
+  id: string;
+  marca: string;
+  modelo: string;
+  tipo_reparo: string;
+  preco: number;
+  ativo: boolean;
+}
+
+export interface Produto {
+  id: string;
+  assistencia_id: string;
+  nome: string;
+  descricao: string | null;
+  categoria: "peca" | "acessorio";
+  modelo_compativel: string | null;
+  preco: number;
+  quantidade: number;
+  imagem_url: string | null;
+  ativo: boolean;
+  created_at: string;
+}
+
+export type StatusPedido =
+  | "aguardando_pagamento"
+  | "pago"
+  | "enviado"
+  | "entregue"
+  | "cancelado";
+
+export interface Pedido {
+  id: string;
+  cliente_id: string;
+  assistencia_id: string;
+  status: StatusPedido;
+  total: number;
+  endereco_entrega: string;
+  observacao: string | null;
+  pago_em: string | null;
+  created_at: string;
+  itens?: PedidoItem[];
+}
+
+export interface PedidoItem {
+  id: string;
+  pedido_id: string;
+  produto_id: string | null;
+  nome: string;
+  preco_unit: number;
+  quantidade: number;
+}
+
+export interface Config {
+  comissao_padrao_pct: number;
+  limite_comissao_pendente: number;
+  dias_tolerancia_comissao: number;
+  instrucoes_comissao: string;
+}
+
 export const STATUS_LABEL: Record<StatusTrabalho, string> = {
   fila: "Buscando assistência",
   aceito: "Aceito",
   a_caminho: "Técnico a caminho",
   em_reparo: "Em reparo",
   concluido: "Concluído",
+  cancelado: "Cancelado",
+};
+
+export const STATUS_PEDIDO_LABEL: Record<StatusPedido, string> = {
+  aguardando_pagamento: "Aguardando pagamento",
+  pago: "Pago",
+  enviado: "Enviado",
+  entregue: "Entregue",
   cancelado: "Cancelado",
 };
 
@@ -102,14 +199,13 @@ export function formatBRL(value: number | null | undefined) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// Preço estimado simples por tipo de reparo — placeholder até puxarmos a
-// tabela real do iphonehome.com.br (fica registrado como decisão em aberto).
-export const PRECO_BASE: Record<string, number> = {
-  Display: 350,
-  Bateria: 220,
-  "Conector de carga": 180,
-  "Câmera frontal": 200,
-  "Câmera traseira": 280,
-  "Alto-falante": 150,
-  Carcaça: 400,
-};
+export function formatData(value: string | null | undefined) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
