@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthScreen } from "@/components/auth/auth-screen";
 import { cn } from "@/lib/utils";
 import { geocodificar } from "@/lib/geo";
 import type { Convite } from "@/lib/types";
@@ -203,19 +203,15 @@ function CompletarCadastroForm() {
 
   if (loading || !user || cliente || assistenciaUsuario) {
     return (
-      <div className="mx-auto max-w-sm px-4 py-16 text-center text-sm text-slate-500">
-        Carregando...
-      </div>
+      <AuthScreen titulo="Carregando..." subtitulo="Só um instante.">
+        <div className="py-10 text-center text-sm text-slate-500">Preparando sua conta...</div>
+      </AuthScreen>
     );
   }
 
   return (
-    <div className="mx-auto max-w-sm px-4 py-16">
-      <Card>
-        <CardHeader>
-          <CardTitle>Só mais um passo</CardTitle>
-        </CardHeader>
-        <CardContent>
+    <AuthScreen titulo="Só mais um passo" subtitulo="Confirme como você vai usar a Phone Home.">
+      <div>
           {convite && (
             <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 p-3">
               <p className="text-sm font-medium text-blue-900">
@@ -244,18 +240,13 @@ function CompletarCadastroForm() {
               </p>
             </div>
           )}
-          <p className="mb-4 text-sm text-slate-600">
-            Confirme como você vai usar a Phone Home.
-          </p>
-          <div className="mb-4 grid grid-cols-2 gap-2">
+          <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-2xl bg-slate-100 p-1.5">
             <button
               type="button"
               onClick={() => setTipo("cliente")}
               className={cn(
-                "rounded-lg border px-3 py-2 text-sm font-medium",
-                tipo === "cliente"
-                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                  : "border-slate-200 text-slate-600"
+                "rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                tipo === "cliente" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500"
               )}
             >
               Sou cliente
@@ -264,13 +255,11 @@ function CompletarCadastroForm() {
               type="button"
               onClick={() => setTipo("assistencia")}
               className={cn(
-                "rounded-lg border px-3 py-2 text-sm font-medium",
-                tipo === "assistencia"
-                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                  : "border-slate-200 text-slate-600"
+                "rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                tipo === "assistencia" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500"
               )}
             >
-              Sou assistência técnica
+              Sou assistência
             </button>
           </div>
 
@@ -315,14 +304,15 @@ function CompletarCadastroForm() {
                 </div>
               </>
             )}
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button type="submit" className="w-full" disabled={submitting}>
+            {error && (
+              <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700 ring-1 ring-inset ring-red-200">{error}</p>
+            )}
+            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
               {submitting ? "Salvando..." : "Concluir cadastro"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+      </div>
+    </AuthScreen>
   );
 }
 
