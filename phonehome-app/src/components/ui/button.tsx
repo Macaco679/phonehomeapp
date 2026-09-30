@@ -6,23 +6,21 @@ type Size = "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300 shadow-sm",
-  secondary:
-    "bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-300",
+    "bg-blue-600 text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700 active:bg-blue-800 disabled:bg-blue-300 disabled:shadow-none",
+  secondary: "bg-slate-900 text-white hover:bg-slate-800 active:bg-black disabled:bg-slate-300",
   outline:
-    "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50 disabled:opacity-50",
-  ghost: "text-slate-700 hover:bg-slate-100 disabled:opacity-50",
-  danger: "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300",
+    "border border-slate-200 bg-white text-slate-900 shadow-sm hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50",
+  ghost: "text-slate-700 hover:bg-slate-100 active:bg-slate-200 disabled:opacity-50",
+  danger: "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 disabled:bg-red-300",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-12 px-6 text-base",
+  sm: "h-9 rounded-lg px-3.5 text-sm",
+  md: "h-11 rounded-xl px-5 text-[15px]",
+  lg: "h-[52px] rounded-2xl px-6 text-base",
 };
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
 }
@@ -33,7 +31,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed",
+          "inline-flex select-none items-center justify-center gap-2 font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100",
           variantClasses[variant],
           sizeClasses[size],
           className
