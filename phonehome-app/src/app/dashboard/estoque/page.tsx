@@ -481,7 +481,7 @@ export default function EstoquePage() {
       {/* Cabeçalho */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Estoque</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Estoque</h1>
           <p className="mt-1 text-sm text-slate-500">
             Peças de iPhone 11 ao iPhone 17. Ajuste as quantidades e os preços direto na lista.
           </p>
@@ -517,15 +517,15 @@ export default function EstoquePage() {
               disabled={!clicavel}
               onClick={() => k.acao && setFiltro(ativo ? "todos" : k.acao)}
               className={cn(
-                "rounded-xl border bg-white p-4 text-left shadow-sm transition",
+                "rounded-2xl border bg-white p-3.5 text-left shadow-sm transition",
                 clicavel ? "cursor-pointer hover:border-slate-300 hover:shadow" : "cursor-default",
                 ativo ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"
               )}
             >
-              <span className={cn("mb-3 flex h-9 w-9 items-center justify-center rounded-lg", k.tom)}>
+              <span className={cn("mb-2 flex h-8 w-8 items-center justify-center rounded-lg", k.tom)}>
                 <IconeKpi tipo={k.tipo} />
               </span>
-              <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{k.valor}</p>
+              <p className="text-xl font-bold tracking-tight text-slate-900 tabular-nums">{k.valor}</p>
               <p className="mt-0.5 text-xs text-slate-500">{k.rotulo}</p>
             </button>
           );
@@ -583,15 +583,15 @@ export default function EstoquePage() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1.5">
+        <div className="space-y-2.5">
+          <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5">
             {(["todas", ...SERIES] as const).map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => setSerie(s)}
                 className={cn(
-                  "rounded-full px-3.5 py-1.5 text-sm font-medium transition",
+                  "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition",
                   serie === s
                     ? "bg-slate-900 text-white shadow-sm"
                     : "bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
@@ -601,7 +601,7 @@ export default function EstoquePage() {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex gap-1 rounded-lg bg-slate-100 p-1">
+          <div className="flex w-full gap-1 rounded-xl bg-slate-200/60 p-1">
             {(
               [
                 ["todos", "Tudo"],
@@ -615,7 +615,7 @@ export default function EstoquePage() {
                 type="button"
                 onClick={() => setFiltro(valor)}
                 className={cn(
-                  "rounded-md px-3 py-1 text-xs font-medium transition",
+                  "flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition",
                   filtro === valor ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 )}
               >
