@@ -182,14 +182,18 @@ export const STATUS_PEDIDO_LABEL: Record<StatusPedido, string> = {
   cancelado: "Cancelado",
 };
 
+// Mesmos reparos do site iphonehome.com.br.
 export const TIPOS_REPARO = [
-  "Display",
+  "Display 1ª linha",
+  "Display original",
   "Bateria",
   "Conector de carga",
   "Câmera frontal",
   "Câmera traseira",
   "Alto-falante",
   "Carcaça",
+  "Vidro frontal",
+  "Vidro traseiro",
 ];
 
 export const MARCAS = ["Apple", "Samsung", "Outra"];
