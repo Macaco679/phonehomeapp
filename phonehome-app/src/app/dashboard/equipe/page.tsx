@@ -82,7 +82,7 @@ export default function EquipePage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold text-slate-900">Equipe</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight text-slate-900">Equipe</h1>
 
       {erro && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
       {ok && <p className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{ok}</p>}
