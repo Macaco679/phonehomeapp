@@ -123,7 +123,7 @@ export default function LojaDashboardPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold text-slate-900">Loja de peças e acessórios</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight text-slate-900">Loja de peças e acessórios</h1>
       {erro && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
 
       <Card className="mb-6">
