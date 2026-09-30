@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { geocodificar } from "@/lib/geo";
+import type { Convite } from "@/lib/types";
 
 const PENDING_KEY = "phonehome_pending_signup";
 
@@ -46,6 +48,8 @@ function CompletarCadastroForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [autoAttempted, setAutoAttempted] = useState(false);
+  const [convite, setConvite] = useState<(Convite & { assistencia_nome?: string }) | null>(null);
+  const [conviteChecado, setConviteChecado] = useState(false);
 
   // Já tem perfil (login normal, ou concluiu cadastro antes) — sai daqui.
   useEffect(() => {
@@ -62,6 +66,29 @@ function CompletarCadastroForm() {
       router.replace("/dashboard");
     }
   }, [loading, user, cliente, assistenciaUsuario, router]);
+
+  // Convite para entrar na equipe de uma assistência (feito pelo dono, por e-mail).
+  useEffect(() => {
+    if (loading || !user || cliente || assistenciaUsuario) return;
+    (async () => {
+      const { data } = await supabase
+        .from("marketplace_convites")
+        .select("*")
+        .eq("status", "pendente")
+        .limit(1);
+      const c = (data?.[0] as Convite | undefined) ?? null;
+      if (c) {
+        const { data: ass } = await supabase
+          .from("marketplace_assistencias")
+          .select("nome")
+          .eq("id", c.assistencia_id)
+          .maybeSingle();
+        setConvite({ ...c, assistencia_nome: ass?.nome });
+      }
+      setConviteChecado(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user, cliente, assistenciaUsuario]);
 
   // Preenche o formulário com o que a pessoa já tinha digitado no cadastro
   // (fica salvo neste navegador enquanto ela confirma o e-mail).
@@ -96,11 +123,14 @@ function CompletarCadastroForm() {
         return false;
       }
     } else {
+      const coords = await geocodificar(dados.endereco);
       const { data: assistencia, error: assistenciaError } = await supabase
         .from("marketplace_assistencias")
         .insert({
           nome: dados.nome,
           endereco: dados.endereco,
+          latitude: coords?.latitude ?? null,
+          longitude: coords?.longitude ?? null,
           raio_atendimento_km: Number(dados.raio) || 10,
         })
         .select()
@@ -131,7 +161,7 @@ function CompletarCadastroForm() {
   // Se tudo que faltava era criar a linha do perfil (fluxo normal de
   // e-mail/senha, sessão já confirmada), completa sozinho sem pedir de novo.
   useEffect(() => {
-    if (loading || !user || cliente || assistenciaUsuario || autoAttempted) return;
+    if (loading || !user || cliente || assistenciaUsuario || autoAttempted || !conviteChecado || convite) return;
     const pending = readPending();
     if (!pending || !pending.nome || !pending.telefone) return;
     if (pending.tipo === "assistencia" && !pending.endereco) return;
@@ -144,7 +174,24 @@ function CompletarCadastroForm() {
       raio: pending.raio ?? "10",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, user, cliente, assistenciaUsuario, autoAttempted]);
+  }, [loading, user, cliente, assistenciaUsuario, autoAttempted, conviteChecado, convite]);
+
+  async function aceitarConvite() {
+    setError(null);
+    setSubmitting(true);
+    const { error: err } = await supabase.rpc("marketplace_aceitar_convite", {
+      p_nome: nome,
+      p_telefone: telefone,
+    });
+    if (err) {
+      setError(err.message);
+      setSubmitting(false);
+      return;
+    }
+    window.localStorage.removeItem(PENDING_KEY);
+    await refresh();
+    router.replace("/dashboard");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -169,6 +216,34 @@ function CompletarCadastroForm() {
           <CardTitle>Só mais um passo</CardTitle>
         </CardHeader>
         <CardContent>
+          {convite && (
+            <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <p className="text-sm font-medium text-blue-900">
+                Você foi convidado(a) para a equipe de {convite.assistencia_nome ?? "uma assistência"}.
+              </p>
+              <div className="mt-3 space-y-3">
+                <div>
+                  <Label htmlFor="convite-nome">Seu nome</Label>
+                  <Input id="convite-nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="convite-telefone">WhatsApp</Label>
+                  <Input id="convite-telefone" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+                </div>
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={submitting || !nome.trim()}
+                  onClick={aceitarConvite}
+                >
+                  {submitting ? "Entrando..." : "Entrar na equipe"}
+                </Button>
+              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                Ou, se preferir, crie uma conta própria preenchendo os dados abaixo.
+              </p>
+            </div>
+          )}
           <p className="mb-4 text-sm text-slate-600">
             Confirme como você vai usar a Phone Home.
           </p>
