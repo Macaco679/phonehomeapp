@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { GoogleButton } from "@/components/auth/google-button";
+
+const PENDING_KEY = "phonehome_pending_signup";
 
 function CadastroForm() {
   const router = useRouter();
@@ -34,10 +37,27 @@ function CadastroForm() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/completar-cadastro`,
+      },
     });
     if (signUpError || !data.user) {
       setLoading(false);
       setError(signUpError?.message ?? "Não foi possível criar a conta.");
+      return;
+    }
+
+    // Sem sessão ainda = confirmação de e-mail pendente. Não dá pra gravar o
+    // perfil agora (RLS exige um usuário autenticado) — guardamos os dados
+    // neste navegador e terminamos o cadastro em /completar-cadastro assim
+    // que a pessoa confirmar o e-mail e voltar autenticada.
+    if (!data.session) {
+      window.localStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ tipo, nome, telefone, endereco, raio })
+      );
+      setLoading(false);
+      setDone(true);
       return;
     }
 
@@ -78,12 +98,8 @@ function CadastroForm() {
     }
 
     setLoading(false);
-    if (data.session) {
-      router.push(tipo === "assistencia" ? "/dashboard" : "/agendar");
-      router.refresh();
-    } else {
-      setDone(true);
-    }
+    router.push(tipo === "assistencia" ? "/dashboard" : "/agendar");
+    router.refresh();
   }
 
   if (done) {
@@ -131,6 +147,16 @@ function CadastroForm() {
           >
             Sou assistência técnica
           </button>
+        </div>
+
+        <GoogleButton
+          redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/completar-cadastro?tipo=${tipo}`}
+          onError={setError}
+        />
+        <div className="my-4 flex items-center gap-3 text-xs text-slate-400">
+          <div className="h-px flex-1 bg-slate-200" />
+          ou preencha seus dados
+          <div className="h-px flex-1 bg-slate-200" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
