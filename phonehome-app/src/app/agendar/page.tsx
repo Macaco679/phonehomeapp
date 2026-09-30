@@ -11,6 +11,219 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MARCAS, TIPOS_REPARO, formatBRL, type Preco } from "@/lib/types";
+import { FAMILIAS_AGENDAMENTO } from "@/lib/catalogo-iphone";
+import { cn } from "@/lib/utils";
+
+// ---------- escolha de data e horário ----------
+const HORARIOS = [
+  { periodo: "Manhã", horas: ["08:00", "09:00", "10:00", "11:00"] },
+  { periodo: "Tarde", horas: ["12:00", "13:00", "14:00", "15:00", "16:00", "17:00"] },
+  { periodo: "Noite", horas: ["18:00", "19:00", "20:00"] },
+];
+
+function chaveDia(d: Date) {
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mes}-${dia}`;
+}
+
+function proximosDias(qtd: number) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Array.from({ length: qtd }, (_, i) => {
+    const d = new Date(hoje);
+    d.setDate(hoje.getDate() + i);
+    return d;
+  });
+}
+
+function nomeDiaSemana(d: Date, i: number) {
+  if (i === 0) return "Hoje";
+  if (i === 1) return "Amanhã";
+  return d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+}
+
+function SeletorHorario({
+  dia,
+  hora,
+  onDia,
+  onHora,
+}: {
+  dia: string;
+  hora: string;
+  onDia: (v: string) => void;
+  onHora: (v: string) => void;
+}) {
+  const [dias] = useState(() => proximosDias(14));
+  const [agora] = useState(() => Date.now());
+  const hojeChave = chaveDia(dias[0]);
+
+  function horaPassou(h: string) {
+    if (dia !== hojeChave) return false;
+    const [hh, mm] = h.split(":").map(Number);
+    const limite = new Date();
+    limite.setHours(hh, mm, 0, 0);
+    return limite.getTime() <= agora + 30 * 60 * 1000; // precisa de 30 min de antecedência
+  }
+
+  const escolhido = dia ? dias.find((d) => chaveDia(d) === dia) : null;
+
+  return (
+    <div className="space-y-4">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {dias.map((d, i) => {
+          const chave = chaveDia(d);
+          const ativo = chave === dia;
+          return (
+            <button
+              key={chave}
+              type="button"
+              onClick={() => {
+                onDia(ativo ? "" : chave);
+                if (ativo) onHora("");
+              }}
+              className={cn(
+                "flex w-[4.25rem] shrink-0 flex-col items-center rounded-xl border px-2 py-2.5 transition",
+                ativo
+                  ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+              )}
+            >
+              <span className={cn("text-[11px] font-medium uppercase tracking-wide", ativo ? "text-blue-100" : "text-slate-400")}>
+                {nomeDiaSemana(d, i)}
+              </span>
+              <span className="text-xl font-semibold leading-tight">{d.getDate()}</span>
+              <span className={cn("text-[11px]", ativo ? "text-blue-100" : "text-slate-400")}>
+                {d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "")}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {dia && (
+        <div className="space-y-3">
+          {HORARIOS.map((grupo) => (
+            <div key={grupo.periodo}>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">{grupo.periodo}</p>
+              <div className="flex flex-wrap gap-2">
+                {grupo.horas.map((h) => {
+                  const passou = horaPassou(h);
+                  const ativo = h === hora;
+                  return (
+                    <button
+                      key={h}
+                      type="button"
+                      disabled={passou}
+                      onClick={() => onHora(ativo ? "" : h)}
+                      className={cn(
+                        "rounded-lg border px-3.5 py-2 text-sm font-medium tabular-nums transition",
+                        ativo
+                          ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+                        passou && "cursor-not-allowed opacity-35 line-through hover:bg-white"
+                      )}
+                    >
+                      {h}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {escolhido && (
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          {hora ? (
+            <>
+              Atendimento preferido:{" "}
+              <span className="font-medium text-slate-900">
+                {escolhido.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })} às {hora}
+              </span>
+            </>
+          ) : (
+            "Agora escolha um horário."
+          )}{" "}
+          <button
+            type="button"
+            className="ml-1 text-blue-600 hover:underline"
+            onClick={() => {
+              onDia("");
+              onHora("");
+            }}
+          >
+            Limpar
+          </button>
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ---------- escolha do modelo de iPhone ----------
+function SeletorModeloIphone({ modelo, onModelo }: { modelo: string; onModelo: (v: string) => void }) {
+  const familiaDoModelo = FAMILIAS_AGENDAMENTO.find((f) => f.modelos.includes(modelo))?.titulo ?? null;
+  const [familiaEscolhida, setFamiliaEscolhida] = useState<string | null>(null);
+  const familia = familiaEscolhida ?? familiaDoModelo;
+  const modelos = FAMILIAS_AGENDAMENTO.find((f) => f.titulo === familia)?.modelos ?? [];
+
+  return (
+    <div className="space-y-3">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {FAMILIAS_AGENDAMENTO.map((f) => (
+          <button
+            key={f.titulo}
+            type="button"
+            onClick={() => setFamiliaEscolhida(f.titulo)}
+            className={cn(
+              "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition",
+              familia === f.titulo
+                ? "bg-slate-900 text-white shadow-sm"
+                : "bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
+            )}
+          >
+            {f.titulo}
+          </button>
+        ))}
+      </div>
+
+      {familia ? (
+        <div className="grid grid-cols-2 gap-2">
+          {modelos.map((m) => {
+            const ativo = m === modelo;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onModelo(m)}
+                className={cn(
+                  "rounded-xl border px-3 py-3 text-left text-sm font-medium transition",
+                  ativo
+                    ? "border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-100"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                {m}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-500">
+          Escolha a linha do seu iPhone acima para ver os modelos.
+        </p>
+      )}
+
+      {modelo && (
+        <p className="text-sm text-slate-600">
+          Modelo escolhido: <span className="font-medium text-slate-900">{modelo}</span>
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function AgendarPage() {
   const { user, cliente, loading } = useAuth();
@@ -22,7 +235,8 @@ export default function AgendarPage() {
   const [modelo, setModelo] = useState("");
   const [tipoReparo, setTipoReparo] = useState(TIPOS_REPARO[0]);
   const [endereco, setEndereco] = useState("");
-  const [horario, setHorario] = useState("");
+  const [dia, setDia] = useState("");
+  const [hora, setHora] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -47,8 +261,16 @@ export default function AgendarPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!cliente) return;
-    setSubmitting(true);
     setError(null);
+    if (!modelo.trim()) {
+      setError("Escolha o modelo do seu aparelho.");
+      return;
+    }
+    if (dia && !hora) {
+      setError("Escolha também o horário, ou limpe a data para deixar em aberto.");
+      return;
+    }
+    setSubmitting(true);
 
     // localização aproximada para achar assistências por perto (se não achar, segue sem)
     const coords = await geocodificar(endereco);
@@ -64,7 +286,7 @@ export default function AgendarPage() {
         endereco,
         latitude: coords?.latitude ?? null,
         longitude: coords?.longitude ?? null,
-        horario_preferido: horario ? new Date(horario).toISOString() : null,
+        horario_preferido: dia && hora ? new Date(`${dia}T${hora}:00`).toISOString() : null,
       })
       .select()
       .single();
@@ -112,10 +334,17 @@ export default function AgendarPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
                 <Label htmlFor="marca">Marca</Label>
-                <Select id="marca" value={marca} onChange={(e) => setMarca(e.target.value)}>
+                <Select
+                  id="marca"
+                  value={marca}
+                  onChange={(e) => {
+                    setMarca(e.target.value);
+                    setModelo("");
+                  }}
+                >
                   {MARCAS.map((m) => (
                     <option key={m} value={m}>
                       {m}
@@ -123,13 +352,21 @@ export default function AgendarPage() {
                   ))}
                 </Select>
               </div>
+            </div>
+
+            {marca === "Apple" ? (
+              <div>
+                <Label>Qual é o seu iPhone?</Label>
+                <SeletorModeloIphone modelo={modelo} onModelo={setModelo} />
+              </div>
+            ) : (
               <div>
                 <Label htmlFor="modelo">Modelo</Label>
                 <Input
                   id="modelo"
                   required
                   list="modelos-sugeridos"
-                  placeholder="iPhone 13"
+                  placeholder="Ex.: Galaxy S23"
                   value={modelo}
                   onChange={(e) => setModelo(e.target.value)}
                 />
@@ -139,7 +376,7 @@ export default function AgendarPage() {
                   ))}
                 </datalist>
               </div>
-            </div>
+            )}
 
             <div>
               <Label htmlFor="tipo">Tipo de reparo</Label>
@@ -176,13 +413,8 @@ export default function AgendarPage() {
             </div>
 
             <div>
-              <Label htmlFor="horario">Horário preferido (opcional)</Label>
-              <Input
-                id="horario"
-                type="datetime-local"
-                value={horario}
-                onChange={(e) => setHorario(e.target.value)}
-              />
+              <Label>Quando você prefere ser atendido? (opcional)</Label>
+              <SeletorHorario dia={dia} hora={hora} onDia={setDia} onHora={setHora} />
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
