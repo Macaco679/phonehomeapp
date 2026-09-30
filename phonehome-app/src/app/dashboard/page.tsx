@@ -6,8 +6,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase/client";
 import { distanciaKm } from "@/lib/geo";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatBRL, type Assistencia, type Trabalho } from "@/lib/types";
+import { Card, CardContent, EmptyState, PageHeader } from "@/components/ui/card";
+import { Icon } from "@/components/icons";
+import { formatBRL, formatData, type Assistencia, type Trabalho } from "@/lib/types";
 
 export default function FilaDeTrabalhosPage() {
   const { assistenciaUsuario } = useAuth();
@@ -69,52 +70,86 @@ export default function FilaDeTrabalhosPage() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h1 className="text-xl font-semibold text-slate-900">Fila de trabalhos disponíveis</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Primeiro que aceitar, leva. Você vê os trabalhos dentro do seu raio de atendimento
-          {assistencia ? ` (${assistencia.raio_atendimento_km} km)` : ""}.
-        </p>
-      </div>
+      <PageHeader
+        title="Fila de trabalhos"
+        subtitle={`Primeiro que aceitar, leva. Você vê trabalhos dentro do seu raio${assistencia ? ` (${assistencia.raio_atendimento_km} km)` : ""}.`}
+        action={
+          fila.length > 0 ? (
+            <span className="rounded-full bg-blue-600 px-3 py-1 text-sm font-bold text-white">{fila.length}</span>
+          ) : undefined
+        }
+      />
 
       {assistencia && (assistencia.latitude === null || assistencia.longitude === null) && (
-        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
           Não conseguimos localizar o endereço da sua assistência, então você vê trabalhos de qualquer região.{" "}
-          <Link href="/dashboard/configuracoes" className="font-medium underline">
+          <Link href="/dashboard/configuracoes" className="font-semibold underline">
             Atualize o endereço
           </Link>{" "}
           para filtrar por raio.
         </p>
       )}
 
-      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-inset ring-red-200">{error}</p>
+      )}
 
       {fila.length === 0 && (
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-slate-500">
-            Nenhum trabalho na fila no momento.
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Icon name="inbox" className="h-7 w-7" />}
+          title="Nenhum trabalho na fila"
+          text="Novos pedidos de clientes aparecem aqui na hora, sem precisar atualizar a tela."
+        />
       )}
 
       <div className="space-y-3">
         {fila.map((t) => {
           const d = distancia(t);
           return (
-            <Card key={t.id}>
-              <CardContent className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-medium text-slate-900">
-                    {t.marca} {t.modelo} — {t.tipo_reparo}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">{t.endereco}</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Estimado: {formatBRL(t.preco_estimado)}
-                    {d !== null && ` · a ${d.toFixed(1).replace(".", ",")} km de você`}
-                  </p>
+            <Card key={t.id} className="animate-fade-up">
+              <CardContent>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                      <Icon name="phone" className="h-[22px] w-[22px]" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-semibold leading-snug text-slate-900">
+                        {t.marca} {t.modelo}
+                      </p>
+                      <p className="text-sm text-slate-500">{t.tipo_reparo}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold leading-tight text-slate-900">
+                      {t.preco_estimado !== null ? formatBRL(t.preco_estimado) : "Sob consulta"}
+                    </p>
+                    <p className="text-[11px] text-slate-400">estimado</p>
+                  </div>
                 </div>
-                <Button disabled={busyId === t.id} onClick={() => aceitar(t.id)}>
-                  {busyId === t.id ? "Aceitando..." : "Aceitar"}
+
+                <div className="mt-3 space-y-1.5 text-sm text-slate-600">
+                  <div className="flex items-start gap-2">
+                    <Icon name="pin" className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="min-w-0">
+                      {t.endereco}
+                      {d !== null && (
+                        <span className="ml-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                          {d.toFixed(1).replace(".", ",")} km
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  {t.horario_preferido && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="clock" className="h-4 w-4 shrink-0 text-slate-400" />
+                      <span>{formatData(t.horario_preferido)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <Button size="lg" className="mt-4 w-full" disabled={busyId === t.id} onClick={() => aceitar(t.id)}>
+                  {busyId === t.id ? "Aceitando..." : "Aceitar trabalho"}
                 </Button>
               </CardContent>
             </Card>
