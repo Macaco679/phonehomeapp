@@ -6,9 +6,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { GoogleButton } from "@/components/auth/google-button";
+import { AuthScreen } from "@/components/auth/auth-screen";
 
 const PENDING_KEY = "phonehome_pending_signup";
 
@@ -64,33 +64,37 @@ function CadastroForm() {
 
   if (done) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <p className="font-medium text-slate-900">Quase lá!</p>
-          <p className="mt-1 text-sm text-slate-600">
-            Confirme seu cadastro pelo link que enviamos para {email} antes de
-            entrar.
-          </p>
-        </CardContent>
-      </Card>
+      <AuthScreen titulo="Quase lá!" subtitulo="Falta só confirmar seu e-mail.">
+        <div className="py-4 text-center">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3.5" y="5.5" width="17" height="13" rx="3" />
+              <path d="m4.5 8 7.5 5.5L19.5 8" />
+            </svg>
+          </span>
+          <p className="mt-4 text-base font-semibold text-slate-900">Enviamos um link para</p>
+          <p className="text-sm font-medium text-blue-600">{email}</p>
+          <p className="mt-2 text-sm text-slate-500">Confirme seu cadastro por ele antes de entrar.</p>
+          <Link href="/login" className="mt-6 block">
+            <Button variant="outline" size="lg" className="w-full">
+              Ir para o login
+            </Button>
+          </Link>
+        </div>
+      </AuthScreen>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Criar conta</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4 grid grid-cols-2 gap-2">
+    <AuthScreen titulo="Criar conta" subtitulo="Leva menos de um minuto.">
+      <div>
+        <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-2xl bg-slate-100 p-1.5">
           <button
             type="button"
             onClick={() => setTipo("cliente")}
             className={cn(
-              "rounded-lg border px-3 py-2 text-sm font-medium",
-              tipo === "cliente"
-                ? "border-blue-600 bg-blue-50 text-blue-700"
-                : "border-slate-200 text-slate-600"
+              "rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+              tipo === "cliente" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500"
             )}
           >
             Sou cliente
@@ -99,13 +103,11 @@ function CadastroForm() {
             type="button"
             onClick={() => setTipo("assistencia")}
             className={cn(
-              "rounded-lg border px-3 py-2 text-sm font-medium",
-              tipo === "assistencia"
-                ? "border-blue-600 bg-blue-50 text-blue-700"
-                : "border-slate-200 text-slate-600"
+              "rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+              tipo === "assistencia" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500"
             )}
           >
-            Sou assistência técnica
+            Sou assistência
           </button>
         </div>
 
@@ -113,7 +115,7 @@ function CadastroForm() {
           redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/completar-cadastro?tipo=${tipo}`}
           onError={setError}
         />
-        <div className="my-4 flex items-center gap-3 text-xs text-slate-400">
+        <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
           <div className="h-px flex-1 bg-slate-200" />
           ou preencha seus dados
           <div className="h-px flex-1 bg-slate-200" />
@@ -181,28 +183,28 @@ function CadastroForm() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
+          {error && (
+            <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700 ring-1 ring-inset ring-red-200">{error}</p>
+          )}
+          <Button type="submit" size="lg" className="w-full" disabled={loading}>
             {loading ? "Criando conta..." : "Criar conta"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-slate-500">
+        <p className="mt-6 text-center text-sm text-slate-500">
           Já tem conta?{" "}
-          <Link href="/login" className="font-medium text-blue-600">
+          <Link href="/login" className="font-semibold text-blue-600">
             Entrar
           </Link>
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </AuthScreen>
   );
 }
 
 export default function CadastroPage() {
   return (
-    <div className="mx-auto max-w-sm px-4 py-16">
-      <Suspense fallback={null}>
-        <CadastroForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={null}>
+      <CadastroForm />
+    </Suspense>
   );
 }
