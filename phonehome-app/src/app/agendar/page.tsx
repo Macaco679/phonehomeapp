@@ -1,20 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase/client";
+import { geocodificar } from "@/lib/geo";
+import { resolverPreco } from "@/lib/precos";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MARCAS, TIPOS_REPARO, PRECO_BASE, formatBRL } from "@/lib/types";
+import { MARCAS, TIPOS_REPARO, formatBRL, type Preco } from "@/lib/types";
 
 export default function AgendarPage() {
   const { user, cliente, loading } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
+  const [precos, setPrecos] = useState<Preco[]>([]);
   const [marca, setMarca] = useState(MARCAS[0]);
   const [modelo, setModelo] = useState("");
   const [tipoReparo, setTipoReparo] = useState(TIPOS_REPARO[0]);
@@ -23,13 +26,32 @@ export default function AgendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const precoEstimado = PRECO_BASE[tipoReparo] ?? null;
+  useEffect(() => {
+    supabase
+      .from("marketplace_precos")
+      .select("*")
+      .eq("ativo", true)
+      .then(({ data }) => setPrecos((data as Preco[]) ?? []));
+  }, [supabase]);
+
+  const modelosSugeridos = useMemo(() => {
+    const set = new Set<string>();
+    precos.forEach((p) => {
+      if (p.modelo !== "*" && (p.marca === "*" || p.marca === marca)) set.add(p.modelo);
+    });
+    return Array.from(set).sort();
+  }, [precos, marca]);
+
+  const precoEstimado = resolverPreco(precos, marca, modelo, tipoReparo);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!cliente) return;
     setSubmitting(true);
     setError(null);
+
+    // localização aproximada para achar assistências por perto (se não achar, segue sem)
+    const coords = await geocodificar(endereco);
 
     const { data, error: insertError } = await supabase
       .from("marketplace_trabalhos")
@@ -40,6 +62,8 @@ export default function AgendarPage() {
         tipo_reparo: tipoReparo,
         preco_estimado: precoEstimado,
         endereco,
+        latitude: coords?.latitude ?? null,
+        longitude: coords?.longitude ?? null,
         horario_preferido: horario ? new Date(horario).toISOString() : null,
       })
       .select()
@@ -104,10 +128,16 @@ export default function AgendarPage() {
                 <Input
                   id="modelo"
                   required
+                  list="modelos-sugeridos"
                   placeholder="iPhone 13"
                   value={modelo}
                   onChange={(e) => setModelo(e.target.value)}
                 />
+                <datalist id="modelos-sugeridos">
+                  {modelosSugeridos.map((m) => (
+                    <option key={m} value={m} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
@@ -124,10 +154,11 @@ export default function AgendarPage() {
                   </option>
                 ))}
               </Select>
-              {precoEstimado && (
+              {precoEstimado !== null && (
                 <p className="mt-1.5 text-sm text-slate-500">
-                  Preço estimado: <span className="font-medium text-slate-900">{formatBRL(precoEstimado)}</span>{" "}
-                  (confirmado pela assistência que aceitar)
+                  Preço estimado:{" "}
+                  <span className="font-medium text-slate-900">{formatBRL(precoEstimado)}</span>{" "}
+                  (o valor final é informado pela assistência e você confirma no app)
                 </p>
               )}
             </div>
