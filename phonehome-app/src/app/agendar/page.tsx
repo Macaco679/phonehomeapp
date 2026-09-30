@@ -233,7 +233,7 @@ export default function AgendarPage() {
   const [precos, setPrecos] = useState<Preco[]>([]);
   const [marca, setMarca] = useState(MARCAS[0]);
   const [modelo, setModelo] = useState("");
-  const [tipoReparo, setTipoReparo] = useState(TIPOS_REPARO[0]);
+  const [tipoReparo, setTipoReparo] = useState<string>(TIPOS_REPARO[0]);
   const [endereco, setEndereco] = useState("");
   const [dia, setDia] = useState("");
   const [hora, setHora] = useState("");
@@ -256,7 +256,22 @@ export default function AgendarPage() {
     return Array.from(set).sort();
   }, [precos, marca]);
 
-  const precoEstimado = resolverPreco(precos, marca, modelo, tipoReparo);
+  // iPhone: preços do site da Phone Home, por modelo. Outros: preço geral.
+  const apenasModelo = marca === "Apple";
+
+  const modeloTemPrecos = useMemo(
+    () => precos.some((p) => p.marca === marca && p.modelo.trim().toLowerCase() === modelo.trim().toLowerCase()),
+    [precos, marca, modelo]
+  );
+
+  // Se o modelo tem tabela de preços, mostra só os reparos que ele tem.
+  const tiposDisponiveis = useMemo<string[]>(() => {
+    if (!apenasModelo || !modeloTemPrecos) return [...TIPOS_REPARO];
+    return TIPOS_REPARO.filter((t) => resolverPreco(precos, marca, modelo, t, true) !== null);
+  }, [apenasModelo, modeloTemPrecos, precos, marca, modelo]);
+
+  const tipoAtual = tiposDisponiveis.includes(tipoReparo) ? tipoReparo : tiposDisponiveis[0];
+  const precoEstimado = resolverPreco(precos, marca, modelo, tipoAtual, apenasModelo);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -281,7 +296,7 @@ export default function AgendarPage() {
         cliente_id: cliente.id,
         marca,
         modelo,
-        tipo_reparo: tipoReparo,
+        tipo_reparo: tipoAtual,
         preco_estimado: precoEstimado,
         endereco,
         latitude: coords?.latitude ?? null,
@@ -382,21 +397,27 @@ export default function AgendarPage() {
               <Label htmlFor="tipo">Tipo de reparo</Label>
               <Select
                 id="tipo"
-                value={tipoReparo}
+                value={tipoAtual}
                 onChange={(e) => setTipoReparo(e.target.value)}
               >
-                {TIPOS_REPARO.map((t) => (
+                {tiposDisponiveis.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
                 ))}
               </Select>
-              {precoEstimado !== null && (
+              {precoEstimado !== null ? (
                 <p className="mt-1.5 text-sm text-slate-500">
                   Preço estimado:{" "}
                   <span className="font-medium text-slate-900">{formatBRL(precoEstimado)}</span>{" "}
                   (o valor final é informado pela assistência e você confirma no app)
                 </p>
+              ) : (
+                modelo && (
+                  <p className="mt-1.5 text-sm text-slate-500">
+                    Preço sob consulta — a assistência informa o valor depois de avaliar, e você confirma no app.
+                  </p>
+                )
               )}
             </div>
 
