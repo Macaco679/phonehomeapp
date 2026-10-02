@@ -115,7 +115,7 @@ function CadastroForm() {
           redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/completar-cadastro?tipo=${tipo}`}
           onError={setError}
         />
-        <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
+        <div className="hide-in-app my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
           <div className="h-px flex-1 bg-slate-200" />
           ou preencha seus dados
           <div className="h-px flex-1 bg-slate-200" />
