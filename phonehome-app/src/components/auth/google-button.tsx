@@ -46,7 +46,7 @@ export function GoogleButton({
     <button
       type="button"
       onClick={handleClick}
-      className="flex h-[52px] w-full items-center justify-center gap-2.5 rounded-2xl border border-slate-200 bg-white text-[15px] font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.98]"
+      className="hide-in-app flex h-[52px] w-full items-center justify-center gap-2.5 rounded-2xl border border-slate-200 bg-white text-[15px] font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.98]"
     >
       <GoogleIcon />
       Continuar com Google
