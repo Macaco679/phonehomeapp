@@ -80,3 +80,24 @@ a,
     animation: none;
   }
 }
+
+/* App nativo (Capacitor): sem selecao de texto acidental nem realce de toque */
+html.native-app {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior-y: none;
+}
+html.native-app body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+html.native-app input,
+html.native-app textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* No app das lojas o login com Google fica oculto (o Google bloqueia login em WebView) */
+html.native-app .hide-in-app {
+  display: none;
+}
