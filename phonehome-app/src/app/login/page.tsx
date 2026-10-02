@@ -37,7 +37,7 @@ export default function LoginPage() {
         redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/completar-cadastro`}
         onError={setError}
       />
-      <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
+      <div className="hide-in-app my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
         <div className="h-px flex-1 bg-slate-200" />
         ou entre com e-mail
         <div className="h-px flex-1 bg-slate-200" />
