@@ -47,6 +47,16 @@ function CadastroForm() {
       return;
     }
 
+    // E-mail já cadastrado (ex.: a pessoa entrou antes com o Google): o Supabase
+    // responde "ok" sem criar conta nem enviar e-mail, e devolve identities vazio.
+    if (!data.session && data.user.identities?.length === 0) {
+      setLoading(false);
+      setError(
+        "Este e-mail já tem uma conta. Entre pela tela de login — se você se cadastrou com o Google, use o botão do Google."
+      );
+      return;
+    }
+
     // Os dados do formulário ficam guardados neste navegador e o perfil é criado
     // em /completar-cadastro: já, se a conta tem sessão; ou assim que a pessoa
     // confirmar o e-mail e voltar autenticada (o banco exige usuário logado).
