@@ -6,11 +6,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useCarrinho } from "@/hooks/use-carrinho";
 import { createClient } from "@/lib/supabase/client";
+import { ilustracaoProduto } from "@/lib/ilustracoes";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/card";
-import { formatBRL, type Produto } from "@/lib/types";
+import { TIPOS_PRODUTO, descontoPct, familiasDoModelo, formatBRL, type Produto } from "@/lib/types";
+
+const ORDEM_TIPO = Object.fromEntries(TIPOS_PRODUTO.map((t, i) => [t.valor, i]));
+const ORDEM_FAMILIA = ["XR", "SE", "11", "12", "13", "14", "15", "16", "17"];
 
 export default function LojaPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -21,7 +25,9 @@ export default function LojaPage() {
   const [vendedores, setVendedores] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
-  const [categoria, setCategoria] = useState("");
+  const [tipo, setTipo] = useState("");
+  const [familia, setFamilia] = useState("");
+  const [ordem, setOrdem] = useState("relevancia");
   const [endereco, setEndereco] = useState("");
   const [obs, setObs] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -47,10 +53,36 @@ export default function LojaPage() {
     })();
   }, [supabase]);
 
-  const filtrados = produtos.filter((p) => {
-    const texto = `${p.nome} ${p.descricao ?? ""} ${p.modelo_compativel ?? ""}`.toLowerCase();
-    return (!busca || texto.includes(busca.toLowerCase())) && (!categoria || p.categoria === categoria);
-  });
+  // só mostra os tipos e modelos que existem no catálogo
+  const tiposDisponiveis = TIPOS_PRODUTO.filter((t) => produtos.some((p) => p.tipo === t.valor));
+  const familias = useMemo(() => {
+    const todas = new Set(produtos.flatMap((p) => familiasDoModelo(p.modelo_compativel)));
+    return ORDEM_FAMILIA.filter((f) => todas.has(f));
+  }, [produtos]);
+
+  const filtrados = produtos
+    .filter((p) => {
+      const texto = `${p.nome} ${p.descricao ?? ""} ${p.modelo_compativel ?? ""}`.toLowerCase();
+      const fams = familiasDoModelo(p.modelo_compativel);
+      return (
+        (!busca || texto.includes(busca.toLowerCase())) &&
+        (!tipo || (tipo === "ofertas" ? descontoPct(p) > 0 : p.tipo === tipo)) &&
+        // acessório universal (sem modelo) aparece em qualquer modelo
+        (!familia || fams.length === 0 || fams.includes(familia))
+      );
+    })
+    .sort((a, b) => {
+      if (ordem === "menor") return a.preco - b.preco;
+      if (ordem === "maior") return b.preco - a.preco;
+      if (ordem === "desconto") return descontoPct(b) - descontoPct(a);
+      const ta = ORDEM_TIPO[a.tipo ?? "outros"] ?? 99;
+      const tb = ORDEM_TIPO[b.tipo ?? "outros"] ?? 99;
+      if (ta !== tb) return ta - tb;
+      const fa = ORDEM_FAMILIA.indexOf(familiasDoModelo(a.modelo_compativel)[0] ?? "");
+      const fb = ORDEM_FAMILIA.indexOf(familiasDoModelo(b.modelo_compativel)[0] ?? "");
+      if (fa !== fb) return fb - fa; // modelos mais novos primeiro
+      return a.preco - b.preco;
+    });
 
   // carrinho agrupado por vendedor (um pedido por vendedor)
   const grupos = useMemo(() => {
@@ -94,14 +126,47 @@ export default function LojaPage() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         <div>
-          <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_180px]">
+          <div className="mb-3 grid gap-3 sm:grid-cols-[1fr_170px_170px]">
             <Input placeholder="Buscar produto ou modelo…" value={busca} onChange={(e) => setBusca(e.target.value)} />
-            <Select value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-              <option value="">Todas as categorias</option>
-              <option value="peca">Peças</option>
-              <option value="acessorio">Acessórios</option>
+            <Select value={familia} onChange={(e) => setFamilia(e.target.value)} aria-label="Modelo do iPhone">
+              <option value="">Todos os modelos</option>
+              {familias.map((f) => (
+                <option key={f} value={f}>
+                  iPhone {f}
+                </option>
+              ))}
+            </Select>
+            <Select value={ordem} onChange={(e) => setOrdem(e.target.value)} aria-label="Ordenar">
+              <option value="relevancia">Relevância</option>
+              <option value="menor">Menor preço</option>
+              <option value="maior">Maior preço</option>
+              <option value="desconto">Maior desconto</option>
             </Select>
           </div>
+
+          <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
+            {[{ valor: "", label: "Tudo" }, { valor: "ofertas", label: "Ofertas" }, ...tiposDisponiveis].map((t) => (
+              <button
+                key={t.valor}
+                type="button"
+                onClick={() => setTipo(t.valor)}
+                className={
+                  "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold ring-1 ring-inset transition " +
+                  (tipo === t.valor
+                    ? "bg-blue-600 text-white ring-blue-600"
+                    : "bg-white text-slate-600 ring-slate-200 hover:ring-slate-300")
+                }
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {!carregando && produtos.length > 0 && (
+            <p className="mb-3 text-xs text-slate-500">
+              {filtrados.length} {filtrados.length === 1 ? "produto" : "produtos"}
+            </p>
+          )}
 
           {carregando && <p className="text-sm text-slate-500">Carregando…</p>}
           {!carregando && filtrados.length === 0 && (
@@ -116,13 +181,23 @@ export default function LojaPage() {
             {filtrados.map((p) => (
               <Card key={p.id}>
                 <CardContent className="flex h-full flex-col">
-                  {p.imagem_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.imagem_url} alt={p.nome} className="mb-3 h-36 w-full rounded-lg object-cover" />
-                  )}
+                  <div className="relative mb-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={p.imagem_url || ilustracaoProduto(p.tipo)}
+                      alt=""
+                      loading="lazy"
+                      className="h-36 w-full rounded-lg object-cover"
+                    />
+                    {descontoPct(p) > 0 && (
+                      <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white">
+                        -{descontoPct(p)}%
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium text-slate-900">{p.nome}</p>
-                    <Badge>{p.categoria === "peca" ? "Peça" : "Acessório"}</Badge>
+                    <Badge>{TIPOS_PRODUTO.find((t) => t.valor === p.tipo)?.label ?? (p.categoria === "peca" ? "Peça" : "Acessório")}</Badge>
                   </div>
                   {p.modelo_compativel && (
                     <p className="mt-1 text-xs text-slate-500">Compatível: {p.modelo_compativel}</p>
@@ -131,8 +206,13 @@ export default function LojaPage() {
                   {vendedores[p.assistencia_id] && (
                     <p className="mt-1 text-xs text-slate-400">Vendido por {vendedores[p.assistencia_id]}</p>
                   )}
-                  <div className="mt-auto flex items-center justify-between pt-3">
-                    <p className="text-lg font-semibold text-slate-900">{formatBRL(p.preco)}</p>
+                  <div className="mt-auto flex items-end justify-between pt-3">
+                    <div>
+                      {descontoPct(p) > 0 && (
+                        <p className="text-xs text-slate-400 line-through">{formatBRL(Number(p.preco_de))}</p>
+                      )}
+                      <p className="text-lg font-semibold text-slate-900">{formatBRL(Number(p.preco))}</p>
+                    </div>
                     <Button
                       size="sm"
                       onClick={() =>
@@ -154,7 +234,7 @@ export default function LojaPage() {
           </div>
         </div>
 
-        <aside>
+        <aside id="carrinho" className="scroll-mt-4">
           <Card className="lg:sticky lg:top-4">
             <CardHeader>
               <CardTitle>Carrinho ({carrinho.quantidadeTotal})</CardTitle>
@@ -234,6 +314,17 @@ export default function LojaPage() {
           </Card>
         </aside>
       </div>
+
+      {/* no celular o carrinho fica no fim da lista — atalho flutuante até ele */}
+      {carrinho.itens.length > 0 && (
+        <a
+          href="#carrinho"
+          className="fixed inset-x-4 bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+0.75rem)] z-30 flex items-center justify-between rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg md:bottom-4 lg:hidden"
+        >
+          <span>Ver carrinho ({carrinho.quantidadeTotal})</span>
+          <span>{formatBRL(carrinho.total)}</span>
+        </a>
+      )}
     </div>
   );
 }
