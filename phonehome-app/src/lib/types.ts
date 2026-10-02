@@ -122,11 +122,54 @@ export interface Produto {
   descricao: string | null;
   categoria: "peca" | "acessorio";
   modelo_compativel: string | null;
+  tipo: TipoProduto | null;
   preco: number;
+  preco_de: number | null;
   quantidade: number;
   imagem_url: string | null;
   ativo: boolean;
   created_at: string;
+}
+
+export type TipoProduto =
+  | "tela"
+  | "bateria"
+  | "conector"
+  | "camera"
+  | "tampa"
+  | "alto_falante"
+  | "pelicula"
+  | "capa"
+  | "cabo"
+  | "carregador"
+  | "fone"
+  | "outros";
+
+/** Tipos na ordem em que aparecem na loja, com a categoria a que pertencem. */
+export const TIPOS_PRODUTO: { valor: TipoProduto; label: string; categoria: "peca" | "acessorio" }[] = [
+  { valor: "tela", label: "Telas", categoria: "peca" },
+  { valor: "bateria", label: "Baterias", categoria: "peca" },
+  { valor: "conector", label: "Conectores de carga", categoria: "peca" },
+  { valor: "camera", label: "Câmeras", categoria: "peca" },
+  { valor: "tampa", label: "Tampas traseiras", categoria: "peca" },
+  { valor: "alto_falante", label: "Alto-falantes", categoria: "peca" },
+  { valor: "pelicula", label: "Películas", categoria: "acessorio" },
+  { valor: "capa", label: "Capas", categoria: "acessorio" },
+  { valor: "cabo", label: "Cabos", categoria: "acessorio" },
+  { valor: "carregador", label: "Carregadores", categoria: "acessorio" },
+  { valor: "fone", label: "Fones", categoria: "acessorio" },
+  { valor: "outros", label: "Outros", categoria: "acessorio" },
+];
+
+/** Modelos citados em "modelo_compativel" (ex.: "iPhone 13, iPhone 14" → ["13", "14"]). */
+export function familiasDoModelo(modelo: string | null): string[] {
+  if (!modelo) return [];
+  return Array.from(new Set(Array.from(modelo.matchAll(/(?:iPhone\s*|\/\s*)(\d{1,2}|SE|XR)\b/gi), (m) => m[1].toUpperCase())));
+}
+
+export function descontoPct(p: Pick<Produto, "preco" | "preco_de">) {
+  if (!p.preco_de || p.preco_de <= p.preco) return 0;
+  return Math.round((1 - Number(p.preco) / Number(p.preco_de)) * 100);
 }
 
 export type StatusPedido =
