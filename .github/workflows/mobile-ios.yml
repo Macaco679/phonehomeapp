@@ -1,0 +1,44 @@
+name: iOS (App Store)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "phonehome-app/mobile/**"
+      - ".github/workflows/mobile-ios.yml"
+
+defaults:
+  run:
+    working-directory: phonehome-app/mobile
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+
+      - name: Gerar projeto iOS (ícones, abertura, Info.plist)
+        run: npm run ios:add
+
+      - name: Compilar para simulador (verifica que o projeto compila)
+        working-directory: phonehome-app/mobile/ios/App
+        shell: bash
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -25
+
+      - name: Compactar projeto Xcode
+        run: zip -qr phonehome-ios-xcode.zip ios capacitor.config.json capacitor-www node_modules/@capacitor
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phonehome-ios-projeto-xcode
+          path: phonehome-app/mobile/phonehome-ios-xcode.zip
