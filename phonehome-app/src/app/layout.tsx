@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { NativeInit } from "@/components/native-init";
 
 export const metadata: Metadata = {
   title: "Phone Home — Conserto de celular onde você estiver",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className="h-full antialiased">
       <body className="min-h-dvh bg-background text-slate-900">
+        <NativeInit />
         <AppShell>{children}</AppShell>
       </body>
     </html>
