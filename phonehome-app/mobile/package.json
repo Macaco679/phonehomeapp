@@ -1,0 +1,27 @@
+{
+  "name": "phonehome-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Empacotamento Android/iOS (Capacitor) do app Phone Home",
+  "scripts": {
+    "assets": "node scripts/make-assets.mjs",
+    "android:add": "cap add android && npm run assets && capacitor-assets generate --android && node scripts/patch-android.mjs && cap sync android",
+    "ios:add": "cap add ios && npm run assets && capacitor-assets generate --ios && node scripts/patch-ios.mjs && cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2",
+    "sharp": "^0.34.0"
+  }
+}
