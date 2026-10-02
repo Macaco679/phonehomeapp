@@ -8,6 +8,7 @@ import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import {
   STATUS_PEDIDO_LABEL,
+  TIPOS_PRODUTO,
   formatBRL,
   formatData,
   type Pedido,
@@ -16,7 +17,7 @@ import {
   type StatusPedido,
 } from "@/lib/types";
 
-const VAZIO = { nome: "", descricao: "", categoria: "peca", modelo_compativel: "", preco: "", quantidade: "0", imagem_url: "" };
+const VAZIO = { nome: "", descricao: "", categoria: "peca", tipo: "tela", modelo_compativel: "", preco: "", preco_de: "", quantidade: "0", imagem_url: "" };
 
 const PROXIMOS: Partial<Record<StatusPedido, StatusPedido>> = {
   pago: "enviado",
@@ -64,8 +65,10 @@ export default function LojaDashboardPage() {
       nome: p.nome,
       descricao: p.descricao ?? "",
       categoria: p.categoria,
+      tipo: p.tipo ?? "",
       modelo_compativel: p.modelo_compativel ?? "",
       preco: String(p.preco),
+      preco_de: p.preco_de ? String(p.preco_de) : "",
       quantidade: String(p.quantidade),
       imagem_url: p.imagem_url ?? "",
     });
@@ -77,14 +80,23 @@ export default function LojaDashboardPage() {
     if (!assistenciaUsuario) return;
     setBusy(true);
     setErro(null);
+    const precoDe = Number(form.preco_de);
+    const imagem = form.imagem_url.trim();
+    if (form.preco_de && precoDe <= Number(form.preco)) {
+      setErro("O preço \"de\" (riscado) precisa ser maior que o preço de venda.");
+      setBusy(false);
+      return;
+    }
     const dados = {
       nome: form.nome.trim(),
       descricao: form.descricao.trim() || null,
       categoria: form.categoria,
+      tipo: form.tipo || null,
       modelo_compativel: form.modelo_compativel.trim() || null,
       preco: Number(form.preco),
+      preco_de: form.preco_de ? precoDe : null,
       quantidade: Math.max(0, Math.floor(Number(form.quantidade) || 0)),
-      imagem_url: form.imagem_url.trim() || null,
+      imagem_url: imagem || null, // sem foto, a loja mostra a ilustração do tipo
     };
     const { error } = editando
       ? await supabase.from("marketplace_produtos").update(dados).eq("id", editando)
@@ -138,9 +150,27 @@ export default function LojaDashboardPage() {
             </div>
             <div>
               <Label htmlFor="p-cat">Categoria</Label>
-              <Select id="p-cat" value={form.categoria} onChange={campo("categoria")}>
+              <Select
+                id="p-cat"
+                value={form.categoria}
+                onChange={(e) => {
+                  const categoria = e.target.value;
+                  const primeiro = TIPOS_PRODUTO.find((t) => t.categoria === categoria)?.valor ?? "";
+                  setForm({ ...form, categoria, tipo: primeiro });
+                }}
+              >
                 <option value="peca">Peça</option>
                 <option value="acessorio">Acessório</option>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="p-tipo">Tipo (filtro da loja)</Label>
+              <Select id="p-tipo" value={form.tipo} onChange={campo("tipo")}>
+                {TIPOS_PRODUTO.filter((t) => t.categoria === form.categoria).map((t) => (
+                  <option key={t.valor} value={t.valor}>
+                    {t.label}
+                  </option>
+                ))}
               </Select>
             </div>
             <div>
@@ -149,11 +179,15 @@ export default function LojaDashboardPage() {
             </div>
             <div>
               <Label htmlFor="p-img">Link da foto (opcional)</Label>
-              <Input id="p-img" type="url" value={form.imagem_url} onChange={campo("imagem_url")} placeholder="https://…" />
+              <Input id="p-img" type="url" value={form.imagem_url} onChange={campo("imagem_url")} placeholder="https://… (vazio = ilustração do tipo)" />
             </div>
             <div>
               <Label htmlFor="p-preco">Preço (R$)</Label>
               <Input id="p-preco" type="number" min={0} step="0.01" required value={form.preco} onChange={campo("preco")} />
+            </div>
+            <div>
+              <Label htmlFor="p-de">Preço &quot;de&quot; riscado (opcional, para promoção)</Label>
+              <Input id="p-de" type="number" min={0} step="0.01" value={form.preco_de} onChange={campo("preco_de")} />
             </div>
             <div>
               <Label htmlFor="p-qtd">Quantidade em estoque</Label>
@@ -224,7 +258,9 @@ export default function LojaDashboardPage() {
                   {p.nome} {!p.ativo && <span className="text-xs text-slate-400">(oculto na loja)</span>}
                 </p>
                 <p className="text-sm text-slate-500">
-                  {formatBRL(p.preco)} · {p.quantidade} em estoque · {p.categoria === "peca" ? "Peça" : "Acessório"}
+                  {p.preco_de ? <span className="mr-1 line-through">{formatBRL(Number(p.preco_de))}</span> : null}
+                  {formatBRL(Number(p.preco))} · {p.quantidade} em estoque ·{" "}
+                  {TIPOS_PRODUTO.find((t) => t.valor === p.tipo)?.label ?? (p.categoria === "peca" ? "Peça" : "Acessório")}
                   {p.modelo_compativel ? ` · ${p.modelo_compativel}` : ""}
                 </p>
               </div>
