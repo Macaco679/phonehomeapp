@@ -113,7 +113,11 @@ Variáveis de ambiente (Vercel): `MERCADOPAGO_ACCESS_TOKEN`,
 `/loja` (cliente, carrinho em `localStorage` via `use-carrinho`), `/meus-pedidos`,
 e `/dashboard/loja` (cada assistência cadastra produtos e acompanha pedidos).
 Pedido é criado por RPC (`marketplace_criar_pedido`), que valida preço/estoque
-no servidor; status avança por `marketplace_atualizar_pedido`. Não há comissão
+no servidor; status avança por `marketplace_atualizar_pedido`.
+Cada produto tem `tipo` (tela, bateria, cabo… — lista em `TIPOS_PRODUTO`,
+`src/lib/types.ts`) para os filtros da vitrine e `preco_de` opcional (preço
+riscado; o banco exige `preco_de > preco`). Sem `imagem_url`, a loja mostra a
+ilustração do tipo (`src/lib/ilustracoes.ts`). Não há comissão
 da plataforma sobre a loja (não foi definida).
 
 ## Preço estimado
@@ -147,12 +151,16 @@ usuário não se promove. Após qualquer migration, rodar `get_advisors`.
 Cadastro por e-mail/senha (`/cadastro`) só cria o usuário no Supabase Auth;
 a linha de perfil (`marketplace_clientes` ou `marketplace_assistencias` +
 `marketplace_usuarios`) só pode ser gravada com uma sessão autenticada (é o
-que a policy `with_check (auth_user_id = auth.uid())` exige). Como o projeto
-Supabase tem confirmação de e-mail ligada, `signUp` não retorna sessão na
-hora — por isso os dados do formulário ficam guardados neste navegador
+que a policy `with_check (auth_user_id = auth.uid())` exige). A confirmação de
+e-mail está **desligada** no Supabase (out/2026) porque o SMTP padrão só entrega
+para membros da equipe — então `signUp` já devolve sessão e o fluxo segue direto
+para `/completar-cadastro`. Se a confirmação for religada (com SMTP próprio),
+`signUp` volta a não retornar sessão — por isso os dados do formulário ficam guardados neste navegador
 (`localStorage`, chave `phonehome_pending_signup`) e a página
 `/completar-cadastro` termina o cadastro sozinha assim que a pessoa confirma
 o e-mail e volta autenticada (é para onde `emailRedirectTo` aponta).
+Se o e-mail já existe (ex.: entrou com Google), `signUp` não cria conta nem
+manda e-mail e devolve `identities: []` — o `/cadastro` detecta isso e avisa.
 
 Login com Google usa `supabase.auth.signInWithOAuth({ provider: "google" })`
 e também redireciona para `/completar-cadastro` — que pede tipo (cliente ou
