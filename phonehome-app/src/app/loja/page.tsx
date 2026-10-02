@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useCarrinho } from "@/hooks/use-carrinho";
 import { createClient } from "@/lib/supabase/client";
-import { ilustracaoProduto } from "@/lib/ilustracoes";
+import { fundoIlustracao, ilustracaoProduto } from "@/lib/ilustracoes";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -125,7 +125,8 @@ export default function LojaPage() {
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div>
+        {/* min-w-0: sem isso a fileira de filtros alarga a coluna e empurra o carrinho para fora da tela */}
+        <div className="min-w-0">
           <div className="mb-3 grid gap-3 sm:grid-cols-[1fr_170px_170px]">
             <Input placeholder="Buscar produto ou modelo…" value={busca} onChange={(e) => setBusca(e.target.value)} />
             <Select value={familia} onChange={(e) => setFamilia(e.target.value)} aria-label="Modelo do iPhone">
@@ -144,7 +145,7 @@ export default function LojaPage() {
             </Select>
           </div>
 
-          <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
+          <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[{ valor: "", label: "Tudo" }, { valor: "ofertas", label: "Ofertas" }, ...tiposDisponiveis].map((t) => (
               <button
                 key={t.valor}
@@ -182,13 +183,15 @@ export default function LojaPage() {
               <Card key={p.id}>
                 <CardContent className="flex h-full flex-col">
                   <div className="relative mb-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.imagem_url || ilustracaoProduto(p.tipo)}
-                      alt=""
-                      loading="lazy"
-                      className="h-36 w-full rounded-lg object-cover"
-                    />
+                    {p.imagem_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.imagem_url} alt="" loading="lazy" className="h-36 w-full rounded-lg object-cover" />
+                    ) : (
+                      <div className="h-36 w-full rounded-lg p-3" style={{ background: fundoIlustracao(p.tipo) }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={ilustracaoProduto(p.tipo)} alt="" loading="lazy" className="h-full w-full object-contain" />
+                      </div>
+                    )}
                     {descontoPct(p) > 0 && (
                       <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white">
                         -{descontoPct(p)}%
