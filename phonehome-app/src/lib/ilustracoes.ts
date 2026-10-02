@@ -26,13 +26,20 @@ const ARTE: Record<TipoProduto, [string, string, string]> = {
 };
 
 const cache: Partial<Record<TipoProduto, string>> = {};
+const tipoValido = (tipo: TipoProduto | null | undefined): TipoProduto => (tipo && ARTE[tipo] ? tipo : "outros");
 
+/** Desenho do tipo (fundo transparente) — use com `object-contain` sobre `fundoIlustracao`. */
 export function ilustracaoProduto(tipo: TipoProduto | null | undefined): string {
-  const t: TipoProduto = tipo && ARTE[tipo] ? tipo : "outros";
+  const t = tipoValido(tipo);
   if (!cache[t]) {
-    const [c1, c2, desenho] = ARTE[t];
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="400" height="300" fill="url(#g)"/>${desenho}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 25 340 260">${ARTE[t][2]}</svg>`;
     cache[t] = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   }
   return cache[t]!;
+}
+
+/** Fundo em degradê da cor do tipo, para o espaço da foto. */
+export function fundoIlustracao(tipo: TipoProduto | null | undefined): string {
+  const [c1, c2] = ARTE[tipoValido(tipo)];
+  return `linear-gradient(135deg, ${c1}, ${c2})`;
 }
