@@ -1,0 +1,48 @@
+{
+  "appId": "br.com.iphonehome.app",
+  "appName": "Phone Home",
+  "webDir": "capacitor-www",
+  "backgroundColor": "#2563eb",
+  "server": {
+    "url": "https://phonehome-app.vercel.app",
+    "cleartext": false,
+    "allowNavigation": [
+      "*.supabase.co",
+      "*.mercadopago.com",
+      "*.mercadopago.com.br",
+      "*.mercadolibre.com",
+      "*.iphonehome.com.br"
+    ]
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#2563eb"
+  },
+  "android": {
+    "backgroundColor": "#2563eb",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 4000,
+      "launchAutoHide": true,
+      "backgroundColor": "#2563eb",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#ffffff",
+      "overlaysWebView": false
+    },
+    "Keyboard": {
+      "resize": "body"
+    },
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    }
+  }
+}
