@@ -110,10 +110,29 @@ Variáveis de ambiente (Vercel): `MERCADOPAGO_ACCESS_TOKEN`,
 
 ## Loja de peças e acessórios
 
-`/loja` (cliente, carrinho em `localStorage` via `use-carrinho`), `/meus-pedidos`,
-e `/dashboard/loja` (cada assistência cadastra produtos e acompanha pedidos).
-Pedido é criado por RPC (`marketplace_criar_pedido`), que valida preço/estoque
-no servidor; status avança por `marketplace_atualizar_pedido`.
+Quem compra o quê (garantido pela RLS de `marketplace_produtos` e pelas RPCs):
+
+- **Peças** (`categoria = 'peca'`) são vendidas **só para assistências** (B2B):
+  vitrine em `/dashboard/pecas`, compras em `/dashboard/compras`, RPC
+  `marketplace_criar_pedido_assistencia` (bloqueia comprar da própria loja).
+- **Acessórios** aparecem para todos: clientes compram em `/loja` (RPC
+  `marketplace_criar_pedido`, que recusa peças) e assistências também podem
+  comprá-los em `/dashboard/pecas`.
+- Visitantes sem login veem só acessórios (policy `produtos_select_acessorios`,
+  que não chama funções restritas a `authenticated`).
+- O pedido tem um comprador: `cliente_id` **ou** `comprador_assistencia_id`
+  (check constraint); o mesmo vale para `marketplace_pagamentos`. O checkout do
+  Mercado Pago aceita os dois.
+- Venda é só do produto (sem instalação inclusa).
+
+`/dashboard/loja` ("Vender produtos"): cada assistência cadastra produtos e
+acompanha pedidos recebidos. Vitrine e página do produto (`/loja/[id]`,
+`/dashboard/pecas/[id]`) ficam em `src/components/loja/`; o carrinho
+(`use-carrinho`) é separado por modo. A ficha técnica é montada por
+`src/lib/especificacoes.ts` (dados de fábrica de cada iPhone + tipo do produto)
+somada às especificações extras da coluna `especificacoes` (jsonb).
+Pedido é criado por RPC, que valida preço/estoque no servidor; status avança por
+`marketplace_atualizar_pedido`.
 Cada produto tem `tipo` (tela, bateria, cabo… — lista em `TIPOS_PRODUTO`,
 `src/lib/types.ts`) para os filtros da vitrine e `preco_de` opcional (preço
 riscado; o banco exige `preco_de > preco`). Sem `imagem_url`, a loja mostra a
