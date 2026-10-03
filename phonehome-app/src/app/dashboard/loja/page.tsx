@@ -16,8 +16,9 @@ import {
   type Produto,
   type StatusPedido,
 } from "@/lib/types";
+import { especificacoesParaTexto, textoParaEspecificacoes } from "@/lib/especificacoes";
 
-const VAZIO = { nome: "", descricao: "", categoria: "peca", tipo: "tela", modelo_compativel: "", preco: "", preco_de: "", quantidade: "0", imagem_url: "" };
+const VAZIO = { nome: "", descricao: "", categoria: "peca", tipo: "tela", modelo_compativel: "", preco: "", preco_de: "", quantidade: "0", imagem_url: "", especificacoes: "" };
 
 const PROXIMOS: Partial<Record<StatusPedido, StatusPedido>> = {
   pago: "enviado",
@@ -69,6 +70,7 @@ export default function LojaDashboardPage() {
       modelo_compativel: p.modelo_compativel ?? "",
       preco: String(p.preco),
       preco_de: p.preco_de ? String(p.preco_de) : "",
+      especificacoes: especificacoesParaTexto(p.especificacoes),
       quantidade: String(p.quantidade),
       imagem_url: p.imagem_url ?? "",
     });
@@ -97,6 +99,7 @@ export default function LojaDashboardPage() {
       preco_de: form.preco_de ? precoDe : null,
       quantidade: Math.max(0, Math.floor(Number(form.quantidade) || 0)),
       imagem_url: imagem || null, // sem foto, a loja mostra a ilustração do tipo
+      especificacoes: textoParaEspecificacoes(form.especificacoes),
     };
     const { error } = editando
       ? await supabase.from("marketplace_produtos").update(dados).eq("id", editando)
@@ -135,7 +138,10 @@ export default function LojaDashboardPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold tracking-tight text-slate-900">Loja de peças e acessórios</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Vender produtos</h1>
+      <p className="mb-4 mt-1 text-sm text-slate-500">
+        Peças aparecem só para outras assistências (em Comprar peças). Acessórios aparecem também para os clientes no app.
+      </p>
       {erro && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
 
       <Card className="mb-6">
@@ -197,6 +203,19 @@ export default function LojaDashboardPage() {
               <Label htmlFor="p-desc">Descrição</Label>
               <Textarea id="p-desc" rows={2} value={form.descricao} onChange={campo("descricao")} />
             </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="p-specs">Especificações extras (opcional — uma por linha, no formato Rótulo: valor)</Label>
+              <Textarea
+                id="p-specs"
+                rows={3}
+                value={form.especificacoes}
+                onChange={campo("especificacoes")}
+                placeholder={"Marca: Exemplo\nCor: Preto"}
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                A ficha técnica já é montada sozinha pelo tipo e modelo (tamanho, resolução, bateria…). Use aqui para completar ou corrigir.
+              </p>
+            </div>
             <div className="flex gap-2 sm:col-span-2">
               <Button type="submit" disabled={busy}>
                 {editando ? "Salvar alterações" : "Adicionar produto"}
@@ -233,7 +252,9 @@ export default function LojaDashboardPage() {
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-1 text-sm text-slate-500">Entregar em: {p.endereco_entrega}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {p.comprador_assistencia_id ? "Compra de assistência" : "Compra de cliente"} · Entregar em: {p.endereco_entrega}
+                  </p>
                   {p.observacao && <p className="text-sm text-slate-500">Obs.: {p.observacao}</p>}
                 </div>
                 <Badge>{STATUS_PEDIDO_LABEL[p.status]}</Badge>
