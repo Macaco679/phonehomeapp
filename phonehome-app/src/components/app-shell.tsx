@@ -36,6 +36,8 @@ const ABAS_ASSISTENCIA: Aba[] = [
       p.startsWith("/dashboard/relatorios") ||
       p.startsWith("/dashboard/equipe") ||
       p.startsWith("/dashboard/loja") ||
+      p.startsWith("/dashboard/pecas") ||
+      p.startsWith("/dashboard/compras") ||
       p.startsWith("/dashboard/configuracoes") ||
       p.startsWith("/admin"),
   },
