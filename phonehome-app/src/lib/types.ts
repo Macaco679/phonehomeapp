@@ -125,10 +125,17 @@ export interface Produto {
   tipo: TipoProduto | null;
   preco: number;
   preco_de: number | null;
+  /** Especificações extras cadastradas pela assistência (somam-se às geradas pelo modelo). */
+  especificacoes: Especificacao[] | null;
   quantidade: number;
   imagem_url: string | null;
   ativo: boolean;
   created_at: string;
+}
+
+export interface Especificacao {
+  rotulo: string;
+  valor: string;
 }
 
 export type TipoProduto =
@@ -181,7 +188,10 @@ export type StatusPedido =
 
 export interface Pedido {
   id: string;
-  cliente_id: string;
+  /** Comprador: um cliente OU uma assistência (compra de peças). */
+  cliente_id: string | null;
+  comprador_assistencia_id: string | null;
+  /** Vendedor */
   assistencia_id: string;
   status: StatusPedido;
   total: number;
