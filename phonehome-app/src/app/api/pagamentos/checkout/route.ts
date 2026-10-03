@@ -3,8 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // Cria uma cobrança (Pix ou cartão) no Mercado Pago para um serviço concluído
 // ou para um pedido da loja. Quem chama precisa estar logado como o cliente
-// dono daquele serviço/pedido — isso é conferido pelo próprio banco (RLS),
-// usando o token de quem está pedindo.
+// dono daquele serviço/pedido — ou como a assistência que comprou peças — e
+// isso é conferido pelo próprio banco (RLS), usando o token de quem está pedindo.
 
 export async function POST(request: Request) {
   const mpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
@@ -46,14 +46,16 @@ export async function POST(request: Request) {
   if (userError || !userData.user) {
     return Response.json({ error: "Sessão expirada. Entre de novo." }, { status: 401 });
   }
-  const { data: clienteRow } = await userClient
-    .from("marketplace_clientes")
-    .select("id")
-    .eq("auth_user_id", userData.user.id)
-    .maybeSingle();
-  if (!clienteRow) {
-    return Response.json({ error: "Somente clientes podem pagar." }, { status: 403 });
+  const [{ data: clienteRow }, { data: usuarioRow }] = await Promise.all([
+    userClient.from("marketplace_clientes").select("id").eq("auth_user_id", userData.user.id).maybeSingle(),
+    userClient.from("marketplace_usuarios").select("assistencia_id").eq("auth_user_id", userData.user.id).maybeSingle(),
+  ]);
+  if (!clienteRow && !usuarioRow) {
+    return Response.json({ error: "Entre como cliente ou assistência para pagar." }, { status: 403 });
   }
+  // quem paga: cliente (reparo ou acessórios) ou assistência (compra de peças)
+  let pagadorCliente: string | null = null;
+  let pagadorAssistencia: string | null = null;
 
   let valor = 0;
   let titulo = "";
@@ -66,7 +68,7 @@ export async function POST(request: Request) {
       .select("id, cliente_id, status, valor_final, forma_pagamento, pago_em_app, marca, modelo, tipo_reparo")
       .eq("id", id)
       .maybeSingle();
-    if (!t || t.cliente_id !== clienteRow.id) {
+    if (!clienteRow || !t || t.cliente_id !== clienteRow.id) {
       return Response.json({ error: "Serviço não encontrado." }, { status: 404 });
     }
     if (t.status !== "concluido" || !t.valor_final || t.forma_pagamento !== "app" || t.pago_em_app) {
@@ -75,13 +77,16 @@ export async function POST(request: Request) {
     valor = Number(t.valor_final);
     titulo = `Reparo ${t.marca} ${t.modelo} — ${t.tipo_reparo}`;
     trabalhoId = t.id;
+    pagadorCliente = clienteRow.id;
   } else {
     const { data: p } = await userClient
       .from("marketplace_pedidos")
-      .select("id, cliente_id, status, total")
+      .select("id, cliente_id, comprador_assistencia_id, status, total")
       .eq("id", id)
       .maybeSingle();
-    if (!p || p.cliente_id !== clienteRow.id) {
+    if (p && clienteRow && p.cliente_id === clienteRow.id) pagadorCliente = clienteRow.id;
+    else if (p && usuarioRow && p.comprador_assistencia_id === usuarioRow.assistencia_id) pagadorAssistencia = usuarioRow.assistencia_id;
+    if (!p || (!pagadorCliente && !pagadorAssistencia)) {
       return Response.json({ error: "Pedido não encontrado." }, { status: 404 });
     }
     if (p.status !== "aguardando_pagamento") {
@@ -103,7 +108,8 @@ export async function POST(request: Request) {
       tipo,
       trabalho_id: trabalhoId,
       pedido_id: pedidoId,
-      cliente_id: clienteRow.id,
+      cliente_id: pagadorCliente,
+      comprador_assistencia_id: pagadorAssistencia,
       valor,
     })
     .select("id")
@@ -113,7 +119,7 @@ export async function POST(request: Request) {
   }
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
-  const retorno = tipo === "trabalho" ? "/meus-reparos" : "/meus-pedidos";
+  const retorno = tipo === "trabalho" ? "/meus-reparos" : pagadorAssistencia ? "/dashboard/compras" : "/meus-pedidos";
 
   const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
