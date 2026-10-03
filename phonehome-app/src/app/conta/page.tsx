@@ -45,7 +45,8 @@ export default function ContaPage() {
         <div className="mt-6">
           <MenuList
             itens={[
-              { href: "/termos", icon: "doc", titulo: "Termos de uso", tom: "cinza" },
+              { href: "/suporte", icon: "help", titulo: "Suporte", tom: "cinza" },
+            { href: "/termos", icon: "doc", titulo: "Termos de uso", tom: "cinza" },
               { href: "/privacidade", icon: "shield", titulo: "Privacidade", tom: "cinza" },
             ]}
           />
@@ -95,6 +96,7 @@ export default function ContaPage() {
 
         <MenuList
           itens={[
+            { href: "/suporte", icon: "help", titulo: "Suporte", tom: "cinza" },
             { href: "/termos", icon: "doc", titulo: "Termos de uso", tom: "cinza" },
             { href: "/privacidade", icon: "shield", titulo: "Privacidade", tom: "cinza" },
             { onClick: sair, icon: "logout", titulo: "Sair da conta", tom: "vermelho" },
