@@ -189,6 +189,23 @@ quem já tem. O provider Google já está ativo no Supabase (Client ID/Secret do
 projeto Google Cloud `phone-home-509600`; redirect
 `https://ymzzrnctrcdnpijznjxq.supabase.co/auth/v1/callback`).
 
+## App instalável (PWA) e apps das lojas
+
+- **PWA**: `src/app/manifest.ts` + ícones gerados em `src/app/pwa/[size]/route.tsx`; o layout usa
+  `AppShell` (cabeçalho, barra de abas no celular — cliente: Início/Agendar/Reparos/Loja/Conta;
+  assistência: Fila/OS/Estoque/Caixa/Mais — e navegação de computador). Telas de entrada
+  (`/login`, `/cadastro`, `/completar-cadastro`) usam `AuthScreen`, sem shell.
+- **Apps Android/iOS** (`mobile/`): "casca" Capacitor que abre o site hospedado (`server.url` em
+  `mobile/capacitor.config.json`), então atualizações do site chegam sem republicar nas lojas.
+  `android/` e `ios/` são gerados em CI (`.github/workflows/mobile-android.yml` e
+  `mobile-ios.yml`); detalhes em `mobile/README.md`. A ponte nativa do site é
+  `src/components/native-init.tsx` (usa `window.Capacitor`, sem dependência npm): splash, barra de
+  status, botão voltar do Android, vibração nas abas. Dentro do app o login com Google fica oculto
+  (classe `hide-in-app`) — o Google bloqueia OAuth em WebView e a Apple exige "Entrar com Apple" quando
+  há login social.
+- **Robustez**: `error.tsx`, `not-found.tsx`, `loading.tsx`, faixa de "sem conexão"
+  (`offline-banner.tsx`), headers de segurança em `next.config.ts`, `robots.ts`/`sitemap.ts` e `/suporte`.
+
 ## Próximos passos
 
 - [ ] Configurar no Vercel `MERCADOPAGO_ACCESS_TOKEN` e
