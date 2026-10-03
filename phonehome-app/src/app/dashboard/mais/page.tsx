@@ -26,7 +26,9 @@ export default function MaisPage() {
   if (!assistenciaUsuario) return null;
 
   const gestao: ItemMenu[] = [
-    { href: "/dashboard/loja", icon: "store", titulo: "Loja", texto: "Produtos e pedidos da sua assistência" },
+    { href: "/dashboard/pecas", icon: "bag", titulo: "Comprar peças", texto: "Telas, baterias e outras peças com entrega" },
+    { href: "/dashboard/compras", icon: "clipboard", titulo: "Minhas compras", texto: "Pedidos de peças da sua assistência" },
+    { href: "/dashboard/loja", icon: "store", titulo: "Vender produtos", texto: "Seus produtos à venda e pedidos recebidos" },
     { href: "/dashboard/relatorios", icon: "chart", titulo: "Relatórios", texto: "Produção e faturamento" },
     { href: "/dashboard/equipe", icon: "users", titulo: "Equipe", texto: "Técnicos e convites" },
     { href: "/dashboard/configuracoes", icon: "settings", titulo: "Minha assistência", texto: "Endereço, raio de atendimento e dados" },
