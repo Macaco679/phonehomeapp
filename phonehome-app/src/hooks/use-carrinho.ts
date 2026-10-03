@@ -11,41 +11,44 @@ export interface ItemCarrinho {
   max: number;
 }
 
-const KEY = "phonehome_carrinho";
+// carrinhos separados: cliente (acessórios) e assistência (compra de peças)
+const CHAVES = { cliente: "phonehome_carrinho", assistencia: "phonehome_carrinho_assistencia" } as const;
+export type EscopoCarrinho = keyof typeof CHAVES;
 
-function ler(): ItemCarrinho[] {
+function ler(chave: string): ItemCarrinho[] {
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(chave);
     return raw ? (JSON.parse(raw) as ItemCarrinho[]) : [];
   } catch {
     return [];
   }
 }
 
-function gravar(itens: ItemCarrinho[]) {
+function gravar(chave: string, itens: ItemCarrinho[]) {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(itens));
+    window.localStorage.setItem(chave, JSON.stringify(itens));
   } catch {
     // navegador sem armazenamento: o carrinho vale só para esta visita
   }
 }
 
-export function useCarrinho() {
+export function useCarrinho(escopo: EscopoCarrinho = "cliente") {
+  const chave = CHAVES[escopo];
   const [itens, setItens] = useState<ItemCarrinho[]>([]);
   const [pronto, setPronto] = useState(false);
 
   useEffect(() => {
-    setItens(ler());
+    setItens(ler(chave));
     setPronto(true);
-  }, []);
+  }, [chave]);
 
   const atualizar = useCallback((fn: (atual: ItemCarrinho[]) => ItemCarrinho[]) => {
     setItens((atual) => {
       const novo = fn(atual);
-      gravar(novo);
+      gravar(chave, novo);
       return novo;
     });
-  }, []);
+  }, [chave]);
 
   const adicionar = useCallback(
     (item: Omit<ItemCarrinho, "quantidade">) =>
